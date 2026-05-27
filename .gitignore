@@ -1,1 +1,4 @@
 .venv\*
+local_rag_db\*
+__pycache__\*
+.env
