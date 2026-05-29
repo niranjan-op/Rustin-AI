@@ -34,18 +34,18 @@ class ProjectListResponse(BaseModel):
 async def validate_path(
     path: str = Query(..., description="The absolute path to validate", min_length=1),
 ):
-    normalized_path = os.path.normpath(path)
+    normalized_path = os.path.normpath(os.path.expanduser(path))
     exists = os.path.isdir(normalized_path)
     return {"exists": exists}
 
 
 @app.post(r"/api/projects/create-project", response_model=dict)
 async def create_project(project: ProjectCreate):
-    normalized_path = os.path.normpath(project.path)
+    normalized_path = os.path.normpath(os.path.expanduser(project.path))
     if not os.path.isdir(normalized_path):
         raise HTTPException(
             status_code=400,
-            detail=f"The specified path:{project.path}, does not exist on machine",
+            detail=f"path '{project.path}' does not exist on this machine",
         )
     if project.instructions == None:
         project.instructions = "None"

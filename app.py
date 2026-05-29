@@ -1,11 +1,17 @@
 import base64
 import os
+import sqlite3
+import urllib.parse
+from contextvars import ContextVar
+from typing import List, Optional
 
 import chainlit as cl
+from chainlit.context import get_context
 from chainlit.data import BaseDataLayer
 from chainlit.data.sql_alchemy import SQLAlchemyDataLayer
 from chainlit.data.storage_clients.base import BaseStorageClient
 from chainlit.input_widget import Select
+from chainlit.server import app as fastapi_app
 from chainlit.types import ThreadDict
 from langchain_core.messages import AIMessage, HumanMessage
 
@@ -16,8 +22,35 @@ import ollama_manager as m
 # Import the compiled graph
 from agent import app_graph
 from database import init_sqlite_db
-import urllib.parse
-from chainlit.context import get_context
+
+# Define a ContextVar to hold the active project ID during FastAPI HTTP requests
+active_project_var: ContextVar[Optional[str]] = ContextVar("active_project_var", default=None)
+
+class ContextVarMiddleware:
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "http":
+            cookie_header = next((val for name, val in scope.get("headers", []) if name == b"cookie"), b"")
+            cookie_str = cookie_header.decode("utf-8", errors="ignore")
+            project_id = None
+            for cookie in cookie_str.split(";"):
+                parts = cookie.strip().split("=")
+                if len(parts) >= 2 and parts[0] == "active_project_id":
+                    project_id = urllib.parse.unquote(parts[1])
+            
+            # Set contextvar before passing to the rest of the app
+            token = active_project_var.set(project_id)
+            try:
+                await self.app(scope, receive, send)
+            finally:
+                active_project_var.reset(token)
+        else:
+            await self.app(scope, receive, send)
+
+fastapi_app.add_middleware(ContextVarMiddleware)
+
 
 # define ollama_port for  further connections
 ollama_port = m.is_ollama_running()
@@ -77,49 +110,125 @@ class LocalBlobClient(BaseStorageClient):
 
 
 class CustomSQLAlchemyDataLayer(SQLAlchemyDataLayer):
+    pending_project_links: dict = {}
+
     def _get_active_project_id(self) -> str | None:
+        # 1. Try to get it from the HTTP ContextVar (works for FastAPI routes like /threads)
+        project_id = active_project_var.get()
+        if project_id is not None:
+            return project_id
+
+        # 2. Fall back to Chainlit's WebSocket context (works for on_chat_start, on_message)
         try:
             context = get_context()
             if not context or not context.session:
-                return None
+                return "NO_CONTEXT"
             headers = context.session.client_headers
-            cookie_str = headers.get("cookie", "")
+            cookie_str = headers.get("cookie", headers.get("Cookie", ""))
             for cookie in cookie_str.split(";"):
                 parts = cookie.strip().split("=")
-                if len(parts) == 2 and parts[0] == "active_project_id":
+                if len(parts) >= 2 and parts[0] == "active_project_id":
                     return urllib.parse.unquote(parts[1])
-        except Exception as e:
-            print(f"[DEBUG] Error reading active_project_id from cookie: {e}")
+        except Exception:
+            return "NO_CONTEXT"
         return None
 
-    def _link_thread_to_project(self, thread_id: str):
-        project_id = self._get_active_project_id()
-        if project_id and thread_id:
-            import sqlite3
-            try:
-                conn = sqlite3.connect(".files/test.db")
-                cursor = conn.cursor()
+    async def _link_thread_to_project(self, thread_id: str):
+        """Update threads.project_id for the given thread based on the active project cookie.
+
+        - If a project is active  → set project_id = <active_project_id>
+        - If no project is active → set project_id = '__none__'  ("All Chats" sentinel)
+        """
+        if not thread_id:
+            return
+        
+        # Check if we have a pending link for this thread (from on_chat_start)
+        project_id = self.pending_project_links.get(thread_id)
+
+        if project_id is None:
+            # Fall back to reading the cookie (if we have context)
+            project_id = self._get_active_project_id()
+        
+        if project_id == "NO_CONTEXT":
+            # We're running in a background task without context.
+            # Do NOT overwrite the database, keep whatever was set earlier.
+            return
+
+        # Use sentinel string instead of NULL so filtering is unambiguous
+        db_project_id = project_id if project_id else "__none__"
+
+        try:
+            query = "UPDATE threads SET project_id = :project_id WHERE id = :thread_id"
+            await self.execute_sql(
+                query=query,
+                parameters={"project_id": db_project_id, "thread_id": thread_id},
+            )
+            print(f"[DEBUG] Thread {thread_id} → project_id={db_project_id!r}")
+        except Exception as e:
+            print(f"[DEBUG] Failed to update thread project_id: {e}")
+
+    async def update_thread(
+        self,
+        thread_id: str,
+        name: Optional[str] = None,
+        user_id: Optional[str] = None,
+        metadata: Optional[dict] = None,
+        tags: Optional[List[str]] = None,
+    ):
+        res = await super().update_thread(
+            thread_id=thread_id,
+            name=name,
+            user_id=user_id,
+            metadata=metadata,
+            tags=tags,
+        )
+        if thread_id:
+            await self._link_thread_to_project(thread_id)
+        return res
+
+    async def get_all_user_threads(
+        self,
+        user_id: Optional[str] = None,
+        thread_id: Optional[str] = None,
+    ) -> Optional[List[ThreadDict]]:
+        """Override to filter threads by the active project."""
+        # Always bypass filter when loading a specific thread (e.g. on_chat_resume)
+        if thread_id:
+            return await super().get_all_user_threads(
+                user_id=user_id, thread_id=thread_id
+            )
+
+        active_project_id = self._get_active_project_id()  # None = All Chats
+
+        # Fetch full unfiltered list first
+        all_threads: Optional[List[ThreadDict]] = await super().get_all_user_threads(
+            user_id=user_id, thread_id=None
+        )
+        if not isinstance(all_threads, list):
+            return all_threads
+
+        # Build a set of matching thread IDs via a fast synchronous SQLite query.
+        try:
+            conn = sqlite3.connect(".files/test.db")
+            cursor = conn.cursor()
+            if active_project_id and active_project_id != "NO_CONTEXT":
+                # Show only threads belonging to this project
                 cursor.execute(
-                    "UPDATE threads SET project_id = ? WHERE id = ?",
-                    (project_id, thread_id)
+                    "SELECT id FROM threads WHERE project_id = ?",
+                    (active_project_id,),
                 )
-                conn.commit()
-                conn.close()
-                print(f"[DEBUG] Linked thread {thread_id} to project {project_id}")
-            except Exception as e:
-                print(f"[DEBUG] Failed to update thread project_id: {e}")
+            else:
+                # All Chats (or fallback if no context): show threads with sentinel '__none__' OR legacy NULL rows
+                cursor.execute(
+                    "SELECT id FROM threads WHERE project_id = '__none__' OR project_id IS NULL"
+                )
+            matching_ids = {row[0] for row in cursor.fetchall()}
+            conn.close()
+        except Exception as e:
+            print(f"[DEBUG] Failed to query thread project_ids: {e}")
+            matching_ids = {t["id"] for t in all_threads}  # fallback: show all
 
-    async def create_thread(self, thread: ThreadDict):
-        res = await super().create_thread(thread)
-        if thread.get("id"):
-            self._link_thread_to_project(thread["id"])
-        return res
-
-    async def update_thread(self, thread: ThreadDict):
-        res = await super().update_thread(thread)
-        if thread.get("id"):
-            self._link_thread_to_project(thread["id"])
-        return res
+        return [t for t in all_threads if t["id"] in matching_ids]
 
 
 @cl.data_layer
@@ -149,6 +258,18 @@ async def on_start_chat():
         ]
     ).send()
     cl.user_session.set("settings", settings)
+
+    # Store the active project for this thread so the background task can find it
+    try:
+        context = get_context()
+        if context and context.session:
+            data_layer = cl.data._data_layer
+            if hasattr(data_layer, "_get_active_project_id"):
+                project_id = data_layer._get_active_project_id()
+                if project_id and project_id != "NO_CONTEXT":
+                    data_layer.pending_project_links[context.session.thread_id] = project_id
+    except Exception as e:
+        print(f"[DEBUG] Failed to cache thread project_id in on_chat_start: {e}")
 
 
 @cl.on_chat_resume

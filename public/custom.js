@@ -211,230 +211,217 @@
   // =============================================
   // Modal
   // =============================================
+  // --- Fetch projects list from backend ---
+  async function listProjects() {
+    try {
+      const response = await fetch(`/api/projects/projects-list`);
+      if (!response.ok) throw new Error("Error fetching projects");
+      return await response.json();
+    } catch (error) {
+      console.error("Error fetching projects", error);
+      return [];
+    }
+  }
+
+  // ==============================================================
+  // PATH VALIDATION
+  // ==============================================================
+  async function validatePath(path) {
+    try {
+      const url = `/api/projects/validate-path?path=${encodeURIComponent(path)}`;
+      const response = await fetch(url);
+      if (!response.ok) throw new Error("Network response was not ok");
+      const result = await response.json();
+      return result.exists;
+    } catch (error) {
+      console.error("Error validating path:", error);
+      return false;
+    }
+  }
+
+  // ==============================================================
+  // Render the list view into #project-modal
+  // ==============================================================
+  async function showListView() {
+    const modal = document.getElementById("project-modal");
+    if (!modal) return;
+
+    modal.innerHTML = `
+      <div class="pm-header">
+        <h2>Projects</h2>
+        <button class="pm-close-btn" id="pm-close">${ICONS.x}</button>
+      </div>
+
+      <button class="pm-action-btn" id="pm-btn-all-chats">
+        ${ICONS.home}
+        All Chats
+        ${activeProjectId ? "" : `<span style="margin-left:auto">${ICONS.check}</span>`}
+      </button>
+
+      <button class="pm-action-btn" id="pm-btn-new">
+        ${ICONS.folderPlus}
+        New Project
+      </button>
+
+      <div class="pm-section-label">Workspaces</div>
+      <div id="pm-project-list">
+        <div style="padding:10px;text-align:center;font-size:13px;opacity:0.4;">Loading...</div>
+      </div>
+    `;
+
+    document.getElementById("pm-close").addEventListener("click", closeModal);
+
+    document.getElementById("pm-btn-all-chats").addEventListener("click", () => {
+      clearCookie("active_project");
+      clearCookie("active_project_id");
+      window.location.href = "/";
+    });
+
+    document.getElementById("pm-btn-new").addEventListener("click", () => showNewProjectForm());
+
+    // Fetch and render projects
+    const projects_list = await listProjects();
+    renderProjects(projects_list);
+  }
+
+  // ==============================================================
+  // Render the New Project form into #project-modal
+  // ==============================================================
+  function showNewProjectForm() {
+    const modal = document.getElementById("project-modal");
+    if (!modal) return;
+
+    modal.innerHTML = `
+      <div class="pm-header">
+        <h2>New Project</h2>
+        <button class="pm-close-btn" id="pm-close-form">${ICONS.x}</button>
+      </div>
+      <form id="pm-new-form">
+        <div class="pm-form-group">
+          <label>Name</label>
+          <input type="text" id="pm-input-name" class="pm-input" required placeholder="My Awesome Project" />
+        </div>
+        <div class="pm-form-group">
+          <label>Description</label>
+          <input type="text" id="pm-input-desc" class="pm-input" required placeholder="A brief description" data-auto="true" />
+        </div>
+        <div class="pm-form-group">
+          <label>Absolute Path</label>
+          <input type="text" id="pm-input-path" class="pm-input" required placeholder="C:/projects/my-awesome-project" />
+          <div id="pm-path-error" class="pm-error-msg">Path does not exist on this machine.</div>
+        </div>
+        <div class="pm-form-group">
+          <label>Instructions (Optional)</label>
+          <textarea id="pm-input-inst" class="pm-input" placeholder="Specific instructions for the agent..."></textarea>
+        </div>
+        <div class="pm-form-actions">
+          <button type="button" class="pm-btn-secondary" id="pm-btn-cancel">Cancel</button>
+          <button type="submit" class="pm-btn-primary">Create Project</button>
+        </div>
+      </form>
+    `;
+
+    // X button → close entire modal
+    document.getElementById("pm-close-form").addEventListener("click", closeModal);
+
+    // Cancel → go back to list view (no close/reopen flicker)
+    document.getElementById("pm-btn-cancel").addEventListener("click", () => showListView());
+
+    const nameInput = document.getElementById("pm-input-name");
+    const descInput = document.getElementById("pm-input-desc");
+    const pathInput = document.getElementById("pm-input-path");
+    const pathError = document.getElementById("pm-path-error");
+
+    nameInput.addEventListener("input", () => {
+      if (descInput.dataset.auto === "true") descInput.value = nameInput.value;
+    });
+    descInput.addEventListener("input", () => { descInput.dataset.auto = "false"; });
+    pathInput.addEventListener("input", () => {
+      pathInput.classList.remove("error");
+      pathError.style.display = "none";
+    });
+
+    // Real-time path hint on blur (non-blocking — doesn't prevent submission)
+    pathInput.addEventListener("blur", async () => {
+      const p = pathInput.value.trim();
+      if (!p) return;
+      const ok = await validatePath(p);
+      if (!ok) {
+        pathInput.classList.add("error");
+        pathError.textContent = "Path does not exist on this machine.";
+        pathError.style.display = "block";
+      } else {
+        pathInput.classList.remove("error");
+        pathError.style.display = "none";
+      }
+    });
+
+    document.getElementById("pm-new-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const name = nameInput.value.trim();
+      const desc = descInput.value.trim();
+      const path = pathInput.value.trim();
+      const inst = document.getElementById("pm-input-inst").value.trim();
+
+      pathInput.classList.remove("error");
+      pathError.style.display = "none";
+
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+      const originalText = submitBtn.textContent;
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Creating...";
+
+      try {
+        const response = await fetch("/api/projects/create-project", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, path, description: desc, instructions: inst }),
+        });
+
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({}));
+          const detail = errData.detail || "Failed to create project";
+          // If it's a path problem (400 from backend), show it inline
+          if (response.status === 400 && detail.toLowerCase().includes("path")) {
+            pathInput.classList.add("error");
+            pathError.textContent = "Path does not exist on this machine.";
+            pathError.style.display = "block";
+          } else {
+            alert(`Error: ${detail}`);
+          }
+          submitBtn.disabled = false;
+          submitBtn.textContent = originalText;
+          return;
+        }
+
+        const resData = await response.json();
+        setCookie("active_project", name);
+        setCookie("active_project_id", resData.project_id);
+        window.location.href = "/";
+      } catch (error) {
+        alert(`Network error: ${error.message}`);
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+      }
+    });
+  }
+
   async function openModal() {
     if (btn) btn.classList.add("open");
-
-    // --- Fetch projects list from backend ---
-    async function listProjects() {
-      try {
-        const url = `/api/projects/projects-list`;
-        const response = await fetch(url);
-        if (!response.ok) {
-          throw new Error("Error fetching projects");
-        }
-        const result = await response.json();
-        return result;
-      } catch (error) {
-        console.error("Error fetching projects", error);
-        return false;
-      }
-    }
 
     let overlay = document.getElementById("project-modal-overlay");
     if (!overlay) {
       overlay = document.createElement("div");
       overlay.id = "project-modal-overlay";
-      overlay.innerHTML = `
-        <div id="project-modal">
-          <div class="pm-header">
-            <h2>Projects</h2>
-            <button class="pm-close-btn" id="pm-close">${ICONS.x}</button>
-          </div>
-
-          <button class="pm-action-btn" id="pm-btn-all-chats">
-            ${ICONS.home}
-            All Chats
-            ${activeProjectId ? "" : `<span style="margin-left:auto">${ICONS.check}</span>`}
-          </button>
-
-          <button class="pm-action-btn" id="pm-btn-new">
-            ${ICONS.folderPlus}
-            New Project
-          </button>
-
-          <div class="pm-section-label">Workspaces</div>
-          <div id="pm-project-list">
-            <div style="padding: 10px; text-align: center; font-size:13px; opacity:0.4;">No projects yet</div>
-          </div>
-        </div>
-      `;
+      overlay.innerHTML = `<div id="project-modal"></div>`;
       document.body.appendChild(overlay);
 
-      document.getElementById("pm-close").addEventListener("click", closeModal);
       overlay.addEventListener("click", (e) => {
         if (e.target === overlay) closeModal();
       });
-
-      document
-        .getElementById("pm-btn-all-chats")
-        .addEventListener("click", () => {
-          clearCookie("active_project");
-          clearCookie("active_project_id");
-          window.location.reload();
-        });
-
-      document.getElementById("pm-btn-new").addEventListener("click", () => {
-        const modal = document.getElementById("project-modal");
-        const oldHTML = modal.innerHTML;
-
-        modal.innerHTML = `
-          <div class="pm-header">
-            <h2>New Project</h2>
-            <button class="pm-close-btn" id="pm-close-form">${ICONS.x}</button>
-          </div>
-          <form id="pm-new-form">
-            <div class="pm-form-group">
-              <label>Name</label>
-              <input type="text" id="pm-input-name" class="pm-input" required placeholder="My Awesome Project" />
-            </div>
-            <div class="pm-form-group">
-              <label>Description</label>
-              <input type="text" id="pm-input-desc" class="pm-input" required placeholder="A brief description" data-auto="true" />
-            </div>
-            <div class="pm-form-group">
-              <label>Absolute Path</label>
-              <input type="text" id="pm-input-path" class="pm-input" required placeholder="C:/projects/my-awesome-project" />
-              <div id="pm-path-error" class="pm-error-msg">Path does not exist on this machine.</div>
-            </div>
-            <div class="pm-form-group">
-              <label>Instructions (Optional)</label>
-              <textarea id="pm-input-inst" class="pm-input" placeholder="Specific instructions for the agent..."></textarea>
-            </div>
-            <div class="pm-form-actions">
-              <button type="button" class="pm-btn-secondary" id="pm-btn-cancel">Cancel</button>
-              <button type="submit" class="pm-btn-primary">Create Project</button>
-            </div>
-          </form>
-        `;
-
-        document
-          .getElementById("pm-close-form")
-          .addEventListener("click", closeModal);
-
-        const nameInput = document.getElementById("pm-input-name");
-        const descInput = document.getElementById("pm-input-desc");
-        const pathInput = document.getElementById("pm-input-path");
-        const pathError = document.getElementById("pm-path-error");
-
-        nameInput.addEventListener("input", () => {
-          if (descInput.dataset.auto === "true") {
-            descInput.value = nameInput.value;
-          }
-        });
-
-        descInput.addEventListener("input", () => {
-          descInput.dataset.auto = "false";
-        });
-
-        // Hide error when path starts changing again
-        pathInput.addEventListener("input", () => {
-          pathInput.classList.remove("error");
-          pathError.style.display = "none";
-        });
-
-        document
-          .getElementById("pm-btn-cancel")
-          .addEventListener("click", () => {
-            closeModal();
-            setTimeout(openModal, 200); // Re-open to restore original HTML and event listeners
-          });
-
-        // ==============================================================
-        // PATH VALIDATION FUNCTION (WITH API TEMPLATE)
-        // ==============================================================
-        async function validatePath(path) {
-          try {
-            // --- ACTUAL API IMPLEMENTATION ---
-            const url = `/api/projects/validate-path?path=${encodeURIComponent(path)}`;
-            const response = await fetch(url);
-            if (!response.ok) {
-              throw new Error("Network response was not ok");
-            }
-            const result = await response.json();
-            return result.exists; // Returns true/false from Python os.path.isdir
-          } catch (error) {
-            console.error("Error validating path:", error);
-            return false;
-          }
-        }
-
-
-        document
-          .getElementById("pm-new-form")
-          .addEventListener("submit", async (e) => {
-            e.preventDefault();
-
-            const name = nameInput.value.trim();
-            const desc = descInput.value.trim();
-            const path = pathInput.value.trim();
-            const inst = document.getElementById("pm-input-inst").value.trim();
-
-            // Reset status
-            pathInput.classList.remove("error");
-            pathError.style.display = "none";
-
-            const submitBtn = e.target.querySelector('button[type="submit"]');
-            const originalText = submitBtn.textContent;
-            submitBtn.disabled = true;
-            submitBtn.textContent = "Validating...";
-
-            // Perform backend/mock path validation
-            const isPathValid = await validatePath(path);
-
-            if (!isPathValid) {
-              submitBtn.disabled = false;
-              submitBtn.textContent = originalText;
-              pathInput.classList.add("error");
-              pathError.style.display = "block";
-              return; // Halt creation
-            }
-
-            submitBtn.textContent = "Creating...";
-
-            try {
-              // --- ACTUAL API SUBMIT IMPLEMENTATION ---
-              const response = await fetch("/api/projects/create-project", {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  name: name,
-
-                  path: path,
-                  description: desc,
-                  instructions: inst,
-                }),
-              });
-
-              if (!response.ok) {
-                const errData = await response.json();
-                throw new Error(errData.detail || "Failed to create project");
-              }
-
-              const resData = await response.json();
-              setCookie("active_project", name);
-              setCookie("active_project_id", resData.project_id);
-              window.location.reload();
-            } catch (error) {
-              alert(`Error: ${error.message}`);
-              submitBtn.disabled = false;
-              submitBtn.textContent = originalText;
-            }
-          });
-      });
     }
-    const projects_list = await listProjects();
-    if (projects_list) {
-      renderProjects(projects_list);
-      setTimeout(() => overlay.classList.add("open"), 10);
-      return;
-    }
-    renderProjects([
-      { name: "MyWebApp", path: "C:/projects/webapp" },
-      { name: "DataAnalysis", path: "C:/projects/data" },
-    ]);
 
+    await showListView();
     setTimeout(() => overlay.classList.add("open"), 10);
   }
 
@@ -474,14 +461,15 @@
         if (e.target.closest(".pm-card-delete")) return;
         setCookie("active_project", proj.name);
         setCookie("active_project_id", proj.id);
-        window.location.reload();
+        window.location.href = "/";
       });
 
       // Delete button handler
       const deleteBtn = card.querySelector(".pm-card-delete");
       deleteBtn.addEventListener("click", async (e) => {
         e.stopPropagation();
-        if (!confirm(`Delete project "${proj.name}"? This cannot be undone.`)) return;
+        if (!confirm(`Delete project "${proj.name}"? This cannot be undone.`))
+          return;
 
         const result = await deleteProject(proj.id);
         if (result) {
@@ -489,6 +477,7 @@
           if (activeProjectId === proj.id) {
             clearCookie("active_project");
             clearCookie("active_project_id");
+            window.location.href = "/";
           }
           // Remove the card with animation
           card.style.transition = "opacity 0.25s ease, transform 0.25s ease";
