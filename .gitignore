@@ -4,3 +4,4 @@ __pycache__\*
 __pycache__/*
 local_rag_db/*
 .env
+Dockerfile

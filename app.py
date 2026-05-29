@@ -9,12 +9,15 @@ from chainlit.input_widget import Select
 from chainlit.types import ThreadDict
 from langchain_core.messages import AIMessage, HumanMessage
 
+import api_project_handling
 import models as md
 import ollama_manager as m
 
 # Import the compiled graph
 from agent import app_graph
 from database import init_sqlite_db
+import urllib.parse
+from chainlit.context import get_context
 
 # define ollama_port for  further connections
 ollama_port = m.is_ollama_running()
@@ -73,9 +76,55 @@ class LocalBlobClient(BaseStorageClient):
         pass
 
 
+class CustomSQLAlchemyDataLayer(SQLAlchemyDataLayer):
+    def _get_active_project_id(self) -> str | None:
+        try:
+            context = get_context()
+            if not context or not context.session:
+                return None
+            headers = context.session.client_headers
+            cookie_str = headers.get("cookie", "")
+            for cookie in cookie_str.split(";"):
+                parts = cookie.strip().split("=")
+                if len(parts) == 2 and parts[0] == "active_project_id":
+                    return urllib.parse.unquote(parts[1])
+        except Exception as e:
+            print(f"[DEBUG] Error reading active_project_id from cookie: {e}")
+        return None
+
+    def _link_thread_to_project(self, thread_id: str):
+        project_id = self._get_active_project_id()
+        if project_id and thread_id:
+            import sqlite3
+            try:
+                conn = sqlite3.connect(".files/test.db")
+                cursor = conn.cursor()
+                cursor.execute(
+                    "UPDATE threads SET project_id = ? WHERE id = ?",
+                    (project_id, thread_id)
+                )
+                conn.commit()
+                conn.close()
+                print(f"[DEBUG] Linked thread {thread_id} to project {project_id}")
+            except Exception as e:
+                print(f"[DEBUG] Failed to update thread project_id: {e}")
+
+    async def create_thread(self, thread: ThreadDict):
+        res = await super().create_thread(thread)
+        if thread.get("id"):
+            self._link_thread_to_project(thread["id"])
+        return res
+
+    async def update_thread(self, thread: ThreadDict):
+        res = await super().update_thread(thread)
+        if thread.get("id"):
+            self._link_thread_to_project(thread["id"])
+        return res
+
+
 @cl.data_layer
 def get_data_layer():
-    return SQLAlchemyDataLayer(
+    return CustomSQLAlchemyDataLayer(
         conninfo=connection_string, storage_provider=LocalBlobClient()
     )
 

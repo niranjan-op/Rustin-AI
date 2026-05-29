@@ -41,9 +41,7 @@ def init_sqlite_db(db_path="test.db"):
             userIdentifier TEXT,
             tags TEXT,
             metadata TEXT DEFAULT '{}',
-            project_id TEXT,
-            FOREIGN KEY (userId) REFERENCES users(id),
-            FOREIGN KEY (project_id) REFERENCES PROJECTS(id)
+            FOREIGN KEY (userId) REFERENCES users(id)
         )
         """
     )

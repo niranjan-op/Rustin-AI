@@ -1,0 +1,367 @@
+/* ========================================
+   Project Dropdown Button — fixed, tracks sidebar
+   ======================================== */
+
+#project-dropdown-btn {
+  position: fixed;
+  top: 12px;
+  /* left is set dynamically by JS via getBoundingClientRect */
+  z-index: 900;
+
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 6px 10px;
+  color: var(--cl-primary-text, rgba(255,255,255,0.85));
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+
+  transition: background 0.15s ease, border-color 0.15s ease, left 0.15s ease;
+}
+
+#project-dropdown-btn:hover {
+  background: rgba(255,255,255,0.07);
+  border-color: rgba(255,255,255,0.15);
+}
+
+#project-dropdown-btn svg {
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+
+#project-dropdown-btn .chevron {
+  opacity: 0.5;
+  transition: transform 0.2s ease;
+}
+
+#project-dropdown-btn.open .chevron {
+  transform: rotate(180deg);
+}
+
+/* ========================================
+   Modal Overlay
+   ======================================== */
+
+#project-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+#project-modal-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+#project-modal {
+  background: #1a1a2e;
+  border-radius: 16px;
+  padding: 24px;
+  width: 440px;
+  max-width: 92vw;
+  max-height: 78vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.9);
+  transform: translateY(12px) scale(0.97);
+  transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+#project-modal-overlay.open #project-modal {
+  transform: translateY(0) scale(1);
+}
+
+/* Scrollbar */
+#project-modal::-webkit-scrollbar { width: 4px; }
+#project-modal::-webkit-scrollbar-track { background: transparent; }
+#project-modal::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
+
+/* ========================================
+   Modal Header
+   ======================================== */
+
+.pm-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.pm-header h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: #fff;
+}
+
+.pm-close-btn {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.5);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s, background 0.15s;
+}
+.pm-close-btn:hover {
+  color: #fff;
+  background: rgba(255,255,255,0.1);
+}
+
+/* ========================================
+   Action Buttons (All Chats / New Project)
+   ======================================== */
+
+.pm-action-btn {
+  width: 100%;
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  color: rgba(255,255,255,0.85);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.pm-action-btn:hover {
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(255,255,255,0.18);
+}
+
+.pm-action-btn svg {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+/* ========================================
+   Section Label
+   ======================================== */
+
+.pm-section-label {
+  margin: 18px 0 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.35);
+}
+
+/* ========================================
+   Project Cards
+   ======================================== */
+
+.pm-project-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  color: rgba(255,255,255,0.85);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+}
+
+.pm-project-card:hover {
+  background: rgba(255,255,255,0.09);
+  border-color: rgba(255,255,255,0.2);
+  transform: translateX(2px);
+}
+
+.pm-project-card.active {
+  border-color: rgba(99, 102, 241, 0.6);
+  background: rgba(99, 102, 241, 0.12);
+}
+
+.pm-project-card .pm-card-icon {
+  flex-shrink: 0;
+  color: rgba(255,255,255,0.4);
+}
+
+.pm-project-card.active .pm-card-icon {
+  color: #818cf8;
+}
+
+.pm-card-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.pm-card-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pm-card-path {
+  font-size: 11px;
+  color: rgba(255,255,255,0.4);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pm-card-check {
+  flex-shrink: 0;
+  color: #818cf8;
+}
+
+/* Delete button on project cards */
+.pm-card-delete {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px;
+  border-radius: 6px;
+  color: rgba(255,255,255,0.25);
+  opacity: 0;
+  transition: opacity 0.15s ease, color 0.15s ease, background 0.15s ease;
+  cursor: pointer;
+}
+
+.pm-project-card:hover .pm-card-delete {
+  opacity: 1;
+}
+
+.pm-card-delete:hover {
+  color: #ef4444 !important;
+  background: rgba(239, 68, 68, 0.12);
+}
+
+/* ========================================
+   Form Styles (New Project)
+   ======================================== */
+
+.pm-form-group {
+  margin-bottom: 16px;
+}
+
+.pm-form-group label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 6px;
+}
+
+.pm-input {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: #fff;
+  font-family: inherit;
+  font-size: 14px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+}
+
+.pm-input:focus {
+  outline: none;
+  border-color: rgba(99, 102, 241, 0.6);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.pm-input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+textarea.pm-input {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.pm-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.pm-btn-secondary, .pm-btn-primary {
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+}
+
+.pm-btn-secondary {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.pm-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+}
+
+.pm-btn-primary {
+  background: #4f46e5;
+  border: 1px solid #4f46e5;
+  color: #fff;
+}
+
+.pm-btn-primary:hover {
+  background: #4338ca;
+  border-color: #4338ca;
+}
+
+.pm-btn-primary:active, .pm-btn-secondary:active {
+  transform: scale(0.97);
+}
+
+.pm-error-msg {
+  display: none;
+  color: #ef4444;
+  font-size: 11px;
+  margin-top: 5px;
+  font-weight: 500;
+}
+
+.pm-input.error {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important;
+}
