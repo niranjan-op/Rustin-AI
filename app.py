@@ -1,8 +1,5 @@
-import chainlit as cl
-import ollama_manager as m
-from database import init_sqlite_db
-import os
 import base64
+import os
 
 import chainlit as cl
 from chainlit.data import BaseDataLayer
@@ -13,19 +10,20 @@ from chainlit.types import ThreadDict
 from langchain_core.messages import AIMessage, HumanMessage
 
 import models as md
+import ollama_manager as m
 
 # Import the compiled graph
 from agent import app_graph
-
+from database import init_sqlite_db
 
 # define ollama_port for  further connections
 ollama_port = m.is_ollama_running()
 
 ## Fetch all ollama models code
-    ## TODO
-    
-init_sqlite_db("test.db")
-connection_string = "sqlite+aiosqlite:///./test.db"
+## TODO
+
+init_sqlite_db(".files/test.db")
+connection_string = "sqlite+aiosqlite:///./.files/test.db"
 STORAGE_DIR = os.path.join(os.getcwd(), "public")
 os.makedirs(STORAGE_DIR, exist_ok=True)
 
@@ -89,19 +87,20 @@ async def auth_callback(username: str, password: str):
     return user
 
 
-# @cl.on_chat_start
-# async def on_start_chat():
-#     settings = await cl.ChatSettings(
-#         [
-#             Select(
-#                 id="Available models",
-#                 label="Models",
-#                 values=all_models.keys(),
-#                 initial_index=0,
-#             )
-#         ]
-#     ).send()
-#     cl.user_session.set("settings", settings)
+@cl.on_chat_start
+async def on_start_chat():
+    settings = await cl.ChatSettings(
+        [
+            Select(
+                id="chat-type",
+                label="Chat Type",
+                values=["normal", "project"],
+                initial_index=0,
+            )
+        ]
+    ).send()
+    cl.user_session.set("settings", settings)
+
 
 @cl.on_chat_resume
 async def on_chat_resume(thread: ThreadDict):
@@ -116,7 +115,7 @@ async def on_chat_resume(thread: ThreadDict):
                         "name": el.get("name"),
                         "url": el.get("url"),
                         "type": el.get("type"),
-                        "description" : el.get("description")
+                        "description": el.get("description"),
                     }
                 )
 
@@ -143,10 +142,12 @@ async def on_chat_resume(thread: ThreadDict):
     # ).send()
     # cl.user_session.set("settings", settings)
 
+
 @cl.on_settings_update
 async def setup_agent(settings):
     cl.user_session.set("settings", settings)
     print("Settings updated:", settings)
+
 
 def encode_image(image_path):
     """Returns the base64 string for an image file."""
@@ -206,50 +207,125 @@ async def on_message(message: cl.Message):
         assistant_msg = ""
         final_state = None
 
+        def _extract_text(content):
+            """Convert Gemini list-of-parts content to a plain string."""
+            if not content:
+                return ""
+            if isinstance(content, str):
+                return content
+            if isinstance(content, list):
+                text_parts = []
+                for part in content:
+                    if isinstance(part, str):
+                        text_parts.append(part)
+                    elif isinstance(part, dict) and part.get("type") == "text":
+                        text_parts.append(part.get("text", ""))
+                return "".join(text_parts)
+            return str(content)
+
         # Stream the execution of the graph using astream_events
         async for event in app_graph.astream_events(state, version="v2"):
             kind = event.get("event")
-            
+
             # Stream LLM tokens in real-time
             if kind == "on_chat_model_stream":
-                content = event.get("data", {}).get("chunk", {}).content
-                if content:
-                    await msg.stream_token(content)
-                    assistant_msg += content
-            
+                chunk = event.get("data", {}).get("chunk")
+                if chunk is None:
+                    continue
+                # Safely access .content — chunk could be an AIMessageChunk or other type
+                raw_content = getattr(chunk, "content", None)
+                text = _extract_text(raw_content)
+                if text:
+                    await msg.stream_token(text)
+                    assistant_msg += text
+
             # Capture the final state at the end of the top-level workflow sequence
             elif kind == "on_chain_end":
                 output = event.get("data", {}).get("output")
                 if isinstance(output, dict) and "messages" in output:
                     final_state = output
 
-        # If a final state was returned, retrieve the full messages list and assistant response
+        print(f"[DEBUG] Streamed assistant_msg length: {len(assistant_msg)}")
+
+        # --- Response extraction with fallback chain ---
         if final_state:
             final_messages = final_state.get("messages", [])
-            # Find the last message that is an AIMessage to determine assistant response
-            extracted_msg = None
-            for m in reversed(final_messages):
-                if isinstance(m, AIMessage) or getattr(m, "type", None) == "ai":
-                    extracted_msg = m.content
-                    break
-            if extracted_msg:
-                assistant_msg = extracted_msg
+            print(f"[DEBUG] Final state has {len(final_messages)} messages")
+
+            # Strategy 1: Use streamed text if we accumulated any
+            if assistant_msg.strip():
+                print("[DEBUG] Using Strategy 1: streamed text")
             else:
-                assistant_msg = "Agent processed the request but returned no response."
+                # Strategy 2: Find the last AIMessage with non-empty text content
+                extracted_msg = None
+                for m_item in reversed(final_messages):
+                    if (
+                        isinstance(m_item, AIMessage)
+                        or getattr(m_item, "type", None) == "ai"
+                    ):
+                        text = _extract_text(m_item.content)
+                        if text.strip():
+                            extracted_msg = text
+                            break
+
+                if extracted_msg:
+                    assistant_msg = extracted_msg
+                    print(
+                        f"[DEBUG] Using Strategy 2: AIMessage content (len={len(extracted_msg)})"
+                    )
+                else:
+                    # Strategy 3: Build a response from tool calls and their results
+                    from langchain_core.messages import ToolMessage
+
+                    tool_summaries = []
+                    for i, m_item in enumerate(final_messages):
+                        if isinstance(m_item, ToolMessage):
+                            tool_name = getattr(m_item, "name", None) or "tool"
+                            tool_output = m_item.content or "(no output)"
+                            tool_summaries.append(
+                                f"**{tool_name}** result:\n```\n{tool_output}\n```"
+                            )
+
+                    if tool_summaries:
+                        assistant_msg = (
+                            "Here are the results from the sandbox:\n\n"
+                            + "\n\n".join(tool_summaries)
+                        )
+                        print(
+                            f"[DEBUG] Using Strategy 3: tool results ({len(tool_summaries)} tools)"
+                        )
+                    else:
+                        assistant_msg = (
+                            "Agent processed the request but returned no response."
+                        )
+                        print("[DEBUG] All strategies failed — using fallback message")
+
             cl.user_session.set("chat_history", final_messages)
         else:
-            # Fallback if final state wasn't captured: append manual messages
+            print("[DEBUG] No final_state captured from on_chain_end events")
             if not assistant_msg:
-                assistant_msg = "Agent processed the request but returned no specific response."
+                assistant_msg = (
+                    "Agent processed the request but returned no specific response."
+                )
             current_history = cl.user_session.get("chat_history", [])
             new_history = current_history + [
                 HumanMessage(content=message.content),
-                AIMessage(content=assistant_msg)
+                AIMessage(content=assistant_msg),
             ]
             cl.user_session.set("chat_history", new_history)
 
     except Exception as e:
+        import traceback
+
+        traceback.print_exc()
         assistant_msg = f"Agent Error: {str(e)}"
 
+    # Ensure we always have a string
+    if not isinstance(assistant_msg, str):
+        assistant_msg = _extract_text(assistant_msg)
+    if not assistant_msg.strip():
+        assistant_msg = "Agent completed but produced no visible output."
+
+    print(f"[DEBUG] Final msg.content = {repr(assistant_msg[:200])}")
     msg.content = assistant_msg
     await msg.update()
