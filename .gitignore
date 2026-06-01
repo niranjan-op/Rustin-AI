@@ -13,7 +13,7 @@ __pycache__/
 
 # Application Specific Local Data
 .files/
-local_rag_db/
+local_rag_db/*
 
 # Temporary / Scratch / Debug files
 debug_settings.txt
@@ -35,7 +35,9 @@ public/*
 !public/custom.css
 !public/custom.js
 !public/server/
-
+!logo_dark.ico
+!logo_dark.png
+!logo_light.png
 # Test files
 *_test.py
 test_*.py
