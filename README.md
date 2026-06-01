@@ -76,6 +76,4 @@ From the interface, you can start a new chat, ask the agent to write code, uploa
 
 The backend sandbox server (`public/server/app.js`) implements command filtering and path jailing to prevent the agent from accidentally running destructive system commands or traversing directories outside the active project workspace. 
 
-## 🤝 Contributing
 
-Contributions, issues, and feature requests are welcome! Feel free to check the issues page or submit a Pull Request.
