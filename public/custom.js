@@ -39,6 +39,9 @@
   const activeProjectId = getCookie("active_project_id")
     ? decodeURIComponent(getCookie("active_project_id"))
     : null;
+  const activeProjectPath = getCookie("active_project_path")
+    ? decodeURIComponent(getCookie("active_project_path"))
+    : null;
 
   let btn = null;
 
@@ -271,13 +274,18 @@
 
     document.getElementById("pm-close").addEventListener("click", closeModal);
 
-    document.getElementById("pm-btn-all-chats").addEventListener("click", () => {
-      clearCookie("active_project");
-      clearCookie("active_project_id");
-      window.location.href = "/";
-    });
+    document
+      .getElementById("pm-btn-all-chats")
+      .addEventListener("click", () => {
+        clearCookie("active_project");
+        clearCookie("active_project_id");
+        clearCookie("active_project_path");
+        window.location.href = "/";
+      });
 
-    document.getElementById("pm-btn-new").addEventListener("click", () => showNewProjectForm());
+    document
+      .getElementById("pm-btn-new")
+      .addEventListener("click", () => showNewProjectForm());
 
     // Fetch and render projects
     const projects_list = await listProjects();
@@ -322,10 +330,14 @@
     `;
 
     // X button → close entire modal
-    document.getElementById("pm-close-form").addEventListener("click", closeModal);
+    document
+      .getElementById("pm-close-form")
+      .addEventListener("click", closeModal);
 
     // Cancel → go back to list view (no close/reopen flicker)
-    document.getElementById("pm-btn-cancel").addEventListener("click", () => showListView());
+    document
+      .getElementById("pm-btn-cancel")
+      .addEventListener("click", () => showListView());
 
     const nameInput = document.getElementById("pm-input-name");
     const descInput = document.getElementById("pm-input-desc");
@@ -335,7 +347,9 @@
     nameInput.addEventListener("input", () => {
       if (descInput.dataset.auto === "true") descInput.value = nameInput.value;
     });
-    descInput.addEventListener("input", () => { descInput.dataset.auto = "false"; });
+    descInput.addEventListener("input", () => {
+      descInput.dataset.auto = "false";
+    });
     pathInput.addEventListener("input", () => {
       pathInput.classList.remove("error");
       pathError.style.display = "none";
@@ -356,54 +370,65 @@
       }
     });
 
-    document.getElementById("pm-new-form").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const name = nameInput.value.trim();
-      const desc = descInput.value.trim();
-      const path = pathInput.value.trim();
-      const inst = document.getElementById("pm-input-inst").value.trim();
+    document
+      .getElementById("pm-new-form")
+      .addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const name = nameInput.value.trim();
+        const desc = descInput.value.trim();
+        const path = pathInput.value.trim();
+        const inst = document.getElementById("pm-input-inst").value.trim();
 
-      pathInput.classList.remove("error");
-      pathError.style.display = "none";
+        pathInput.classList.remove("error");
+        pathError.style.display = "none";
 
-      const submitBtn = e.target.querySelector('button[type="submit"]');
-      const originalText = submitBtn.textContent;
-      submitBtn.disabled = true;
-      submitBtn.textContent = "Creating...";
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        const originalText = submitBtn.textContent;
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Creating...";
 
-      try {
-        const response = await fetch("/api/projects/create-project", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, path, description: desc, instructions: inst }),
-        });
+        try {
+          const response = await fetch("/api/projects/create-project", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              name,
+              path,
+              description: desc,
+              instructions: inst,
+            }),
+          });
 
-        if (!response.ok) {
-          const errData = await response.json().catch(() => ({}));
-          const detail = errData.detail || "Failed to create project";
-          // If it's a path problem (400 from backend), show it inline
-          if (response.status === 400 && detail.toLowerCase().includes("path")) {
-            pathInput.classList.add("error");
-            pathError.textContent = "Path does not exist on this machine.";
-            pathError.style.display = "block";
-          } else {
-            alert(`Error: ${detail}`);
+          if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
+            const detail = errData.detail || "Failed to create project";
+            // If it's a path problem (400 from backend), show it inline
+            if (
+              response.status === 400 &&
+              detail.toLowerCase().includes("path")
+            ) {
+              pathInput.classList.add("error");
+              pathError.textContent = "Path does not exist on this machine.";
+              pathError.style.display = "block";
+            } else {
+              alert(`Error: ${detail}`);
+            }
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalText;
+            return;
           }
+
+          const resData = await response.json();
+          setCookie("active_project", name);
+          setCookie("active_project_id", resData.project_id);
+          setCookie("active_project_path", resData.project_path);
+          window.location.href = "/";
+        } catch (error) {
+          alert(`Network error: ${error.message}`);
           submitBtn.disabled = false;
           submitBtn.textContent = originalText;
-          return;
         }
-
-        const resData = await response.json();
-        setCookie("active_project", name);
-        setCookie("active_project_id", resData.project_id);
-        window.location.href = "/";
-      } catch (error) {
-        alert(`Network error: ${error.message}`);
-        submitBtn.disabled = false;
-        submitBtn.textContent = originalText;
-      }
-    });
+      });
   }
 
   async function openModal() {
@@ -461,6 +486,7 @@
         if (e.target.closest(".pm-card-delete")) return;
         setCookie("active_project", proj.name);
         setCookie("active_project_id", proj.id);
+        setCookie("active_project_path", proj.path);
         window.location.href = "/";
       });
 
@@ -477,6 +503,7 @@
           if (activeProjectId === proj.id) {
             clearCookie("active_project");
             clearCookie("active_project_id");
+            clearCookie("active_project_path");
             window.location.href = "/";
           }
           // Remove the card with animation

@@ -1,5 +1,6 @@
 import operator
 from typing import Annotated, List, Literal, Optional, TypedDict
+
 from langchain_core.messages import AnyMessage
 from pydantic import BaseModel, Field
 
@@ -12,9 +13,10 @@ class AgentState(TypedDict, total=False):
     intent_category: str
     enriched_prompt: str
     draft_plan: str
-    next_agent: Literal["planner", "coder", "intuitive"]
     response: str
     gathered_info: list
     searched_for: list
     elements: list[dict]
-    
+    is_project: bool
+    project_id: Optional[str]
+    projet_path: Optional[str]

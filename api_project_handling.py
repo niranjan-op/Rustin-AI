@@ -74,6 +74,7 @@ async def create_project(project: ProjectCreate):
             "status": "success",
             "message": f"Project:`{project.name}` created successfully",
             "project_id": project_id,
+            "project_path": project.path,
         }
     except sqlite3.IntegrityError:
         raise HTTPException(

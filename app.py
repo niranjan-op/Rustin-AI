@@ -1,3 +1,4 @@
+import asyncio
 import base64
 import os
 import sqlite3
@@ -10,7 +11,7 @@ from chainlit.context import get_context
 from chainlit.data import BaseDataLayer
 from chainlit.data.sql_alchemy import SQLAlchemyDataLayer
 from chainlit.data.storage_clients.base import BaseStorageClient
-from chainlit.input_widget import Select
+from chainlit.input_widget import Select, Switch
 from chainlit.server import app as fastapi_app
 from chainlit.types import ThreadDict
 from langchain_core.messages import AIMessage, HumanMessage
@@ -22,9 +23,16 @@ import ollama_manager as m
 # Import the compiled graph
 from agent import app_graph
 from database import init_sqlite_db
+from sandbox_node import node_instance
 
 # Define a ContextVar to hold the active project ID during FastAPI HTTP requests
-active_project_var: ContextVar[Optional[str]] = ContextVar("active_project_var", default=None)
+active_project_var: ContextVar[Optional[str]] = ContextVar(
+    "active_project_var", default=None
+)
+active_project_path_var: ContextVar[Optional[str]] = ContextVar(
+    "active_project_path_var", default=None
+)
+
 
 class ContextVarMiddleware:
     def __init__(self, app):
@@ -32,24 +40,43 @@ class ContextVarMiddleware:
 
     async def __call__(self, scope, receive, send):
         if scope["type"] == "http":
-            cookie_header = next((val for name, val in scope.get("headers", []) if name == b"cookie"), b"")
+            cookie_header = next(
+                (val for name, val in scope.get("headers", []) if name == b"cookie"),
+                b"",
+            )
             cookie_str = cookie_header.decode("utf-8", errors="ignore")
             project_id = None
+            project_path = None
             for cookie in cookie_str.split(";"):
                 parts = cookie.strip().split("=")
                 if len(parts) >= 2 and parts[0] == "active_project_id":
                     project_id = urllib.parse.unquote(parts[1])
-            
-            # Set contextvar before passing to the rest of the app
-            token = active_project_var.set(project_id)
+                if len(parts) >= 2 and parts[0] == "active_project_path":
+                    project_path = urllib.parse.unquote(parts[1])
+
+            # Set contextvars before passing to the rest of the app
+            token_id = active_project_var.set(project_id)
+            token_path = active_project_path_var.set(project_path)
             try:
                 await self.app(scope, receive, send)
             finally:
-                active_project_var.reset(token)
+                active_project_var.reset(token_id)
+                active_project_path_var.reset(token_path)
         else:
             await self.app(scope, receive, send)
 
+
 fastapi_app.add_middleware(ContextVarMiddleware)
+
+# --- Node Server Lifecycle Management ---
+
+@fastapi_app.on_event("shutdown")
+def shutdown_event():
+    print("App is closing. Ensuring Node server is stopped...")
+    node_instance.shutdown()
+
+
+# ------------------------------------------
 
 
 # define ollama_port for  further connections
@@ -133,6 +160,27 @@ class CustomSQLAlchemyDataLayer(SQLAlchemyDataLayer):
             return "NO_CONTEXT"
         return None
 
+    def _get_active_project_path(self) -> str | None:
+        # 1. Try to get it from the HTTP ContextVar (works for FastAPI routes like /threads)
+        project_path = active_project_path_var.get()
+        if project_path is not None:
+            return project_path
+
+        # 2. Fall back to Chainlit's WebSocket context (works for on_chat_start, on_message)
+        try:
+            context = get_context()
+            if not context or not context.session:
+                return None
+            headers = context.session.client_headers
+            cookie_str = headers.get("cookie", headers.get("Cookie", ""))
+            for cookie in cookie_str.split(";"):
+                parts = cookie.strip().split("=")
+                if len(parts) >= 2 and parts[0] == "active_project_path":
+                    return urllib.parse.unquote(parts[1])
+        except Exception:
+            return None
+        return None
+
     async def _link_thread_to_project(self, thread_id: str):
         """Update threads.project_id for the given thread based on the active project cookie.
 
@@ -141,14 +189,14 @@ class CustomSQLAlchemyDataLayer(SQLAlchemyDataLayer):
         """
         if not thread_id:
             return
-        
+
         # Check if we have a pending link for this thread (from on_chat_start)
         project_id = self.pending_project_links.get(thread_id)
 
         if project_id is None:
             # Fall back to reading the cookie (if we have context)
             project_id = self._get_active_project_id()
-        
+
         if project_id == "NO_CONTEXT":
             # We're running in a background task without context.
             # Do NOT overwrite the database, keep whatever was set earlier.
@@ -245,20 +293,38 @@ async def auth_callback(username: str, password: str):
     return user
 
 
+async def update_settings_widgets(is_project: bool, current_settings: dict = None):
+    settings_list = []
+
+    if is_project:
+        initial_terminal = True
+        if current_settings and "terminal_access" in current_settings:
+            initial_terminal = current_settings["terminal_access"]
+
+        settings_list.append(
+            Switch(
+                id="terminal_access",
+                label="Terminal Access to Agent",
+                initial=initial_terminal,
+            )
+        )
+        if current_settings:
+            current_settings["terminal_access"] = initial_terminal
+    else:
+        if current_settings:
+            current_settings["terminal_access"] = False
+
+    settings = await cl.ChatSettings(settings_list).send()
+    if current_settings is not None:
+        cl.user_session.set("settings", current_settings)
+    else:
+        cl.user_session.set("settings", settings)
+    return settings
+
+
 @cl.on_chat_start
 async def on_start_chat():
-    settings = await cl.ChatSettings(
-        [
-            Select(
-                id="chat-type",
-                label="Chat Type",
-                values=["normal", "project"],
-                initial_index=0,
-            )
-        ]
-    ).send()
-    cl.user_session.set("settings", settings)
-
+    is_project_initial = False
     # Store the active project for this thread so the background task can find it
     try:
         context = get_context()
@@ -267,13 +333,74 @@ async def on_start_chat():
             if hasattr(data_layer, "_get_active_project_id"):
                 project_id = data_layer._get_active_project_id()
                 if project_id and project_id != "NO_CONTEXT":
-                    data_layer.pending_project_links[context.session.thread_id] = project_id
+                    print(f"project_id:{project_id}")
+                    is_project_initial = True
+                    data_layer.pending_project_links[context.session.thread_id] = (
+                        project_id
+                    )
+
+                    # Get path from cookie if available
+                    if hasattr(data_layer, "_get_active_project_path"):
+                        path = data_layer._get_active_project_path()
+                        if path:
+                            print(f"project_path{node_instance.project_path}")
+                            node_instance.project_path = path
+
+                    # Fallback to database lookup if cookie was missing
+                    if not node_instance.project_path:
+                        import sqlite3
+
+                        conn = sqlite3.connect(".files/test.db")
+                        cursor = conn.cursor()
+                        cursor.execute(
+                            "SELECT path FROM projects WHERE id = ?", (project_id,)
+                        )
+                        path_row = cursor.fetchone()
+                        if path_row:
+                            node_instance.project_path = path_row[0]
+                            print(f"project_path{node_instance.project_path}")
+                        conn.close()
+
     except Exception as e:
         print(f"[DEBUG] Failed to cache thread project_id in on_chat_start: {e}")
+
+    if is_project_initial:
+        node_instance.start_server()
+    else:
+        node_instance.shutdown()
+
+    await update_settings_widgets(is_project_initial)
 
 
 @cl.on_chat_resume
 async def on_chat_resume(thread: ThreadDict):
+    thread_id = thread.get("id")
+    is_project_initial = False
+    try:
+        conn = sqlite3.connect(".files/test.db")
+        cursor = conn.cursor()
+        cursor.execute("SELECT project_id FROM threads WHERE id = ?", (thread_id,))
+        row = cursor.fetchone()
+
+        if row and row[0] and row[0] != "__none__":
+            is_project_initial = True
+            project_id = row[0]
+            cursor.execute("SELECT path FROM projects WHERE id = ?", (project_id,))
+            path_row = cursor.fetchone()
+            if path_row:
+                node_instance.project_path = path_row[0]
+                print(f"project_path{node_instance.project_path}")
+        conn.close()
+    except Exception as e:
+        print(f"[DEBUG] Failed to fetch thread project_id on resume: {e}")
+
+    if is_project_initial:
+        node_instance.start_server()
+    else:
+        node_instance.shutdown()
+
+    await update_settings_widgets(is_project_initial)
+
     history = []
     for step in thread["steps"]:
         # Extract element info if present in the step
@@ -315,8 +442,8 @@ async def on_chat_resume(thread: ThreadDict):
 
 @cl.on_settings_update
 async def setup_agent(settings):
-    cl.user_session.set("settings", settings)
     print("Settings updated:", settings)
+    cl.user_session.set("settings", settings)
 
 
 def encode_image(image_path):
@@ -331,8 +458,9 @@ def encode_image(image_path):
 
 @cl.on_message
 async def on_message(message: cl.Message):
+    import urllib.parse
+
     settings = cl.user_session.get("settings", {})
-    agent_type = settings.get("Agent", "Fast")
     current_settings = cl.user_session.get("settings")
     # selected_model = current_settings.get("Available models")
     # md.select_model(selected_model)
@@ -362,11 +490,57 @@ async def on_message(message: cl.Message):
     # Get history and add current message
     history = cl.user_session.get("chat_history", [])
 
+    # Check if they are inside a project chat based on context/cookie or thread DB
+    data_layer = cl.data._data_layer
+    project_id = None
+
+    try:
+        context = get_context()
+        thread_id = context.session.thread_id
+        if thread_id:
+            import sqlite3
+
+            conn = sqlite3.connect(".files/test.db")
+            cursor = conn.cursor()
+            cursor.execute("SELECT project_id FROM threads WHERE id = ?", (thread_id,))
+            row = cursor.fetchone()
+            conn.close()
+            if row and row[0]:
+                project_id = row[0]
+
+        # Fallback to cookies if DB doesn't have it (e.g. brand new thread)
+        if not project_id and hasattr(data_layer, "_get_active_project_id"):
+            project_id = data_layer._get_active_project_id()
+    except Exception as e:
+        print(f"Error fetching project_id for thread: {e}")
+
+    # Update the sandbox_node project path from the cookie/DB if active
+    if hasattr(data_layer, "_get_active_project_path"):
+        path = data_layer._get_active_project_path()
+        if path:
+            node_instance.project_path = path
+        elif project_id and project_id != "NO_CONTEXT" and project_id != "__none__":
+            import sqlite3
+
+            conn = sqlite3.connect(".files/test.db")
+            cursor = conn.cursor()
+            cursor.execute("SELECT path FROM projects WHERE id = ?", (project_id,))
+            path_row = cursor.fetchone()
+            if path_row:
+                node_instance.project_path = path_row[0]
+            conn.close()
+
+    # We consider it a project if a specific project_id exists and isn't the fallback "NO_CONTEXT"
+    is_project = bool(
+        project_id and project_id != "NO_CONTEXT" and project_id != "__none__"
+    )
+
     state = {
         "messages": history + [HumanMessage(content=message.content)],
         "user_request": message.content,
-        "agent_type": agent_type,
         "elements": elements_data,  # Pass to agent
+        "is_project": is_project,
+        "project_id": project_id if is_project else None,
     }
 
     # UI Placeholder
@@ -394,7 +568,7 @@ async def on_message(message: cl.Message):
             return str(content)
 
         # Stream the execution of the graph using astream_events
-        async for event in app_graph.astream_events(state, version="v2"):
+        async for event in app_graph.astream_events(state, config={"recursion_limit": 200}, version="v2"):
             kind = event.get("event")
 
             # Stream LLM tokens in real-time

@@ -1,7 +1,32 @@
-.venv\*
-local_rag_db\*
-__pycache__\*
-__pycache__/*
-local_rag_db/*
+# Python Virtual Environments
+venv/
+.venv/
+env/
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment Variables (Secrets)
 .env
+
+# Application Specific Local Data
+.files/
+local_rag_db/
+.chainlit/
+
+# Temporary / Scratch / Debug files
+debug_settings.txt
+file.txt
+tasks.txt
+
+# Phased-out components
 Dockerfile
+
+# Node.js (if added later)
+node_modules/
+
+# OS specific files
+.DS_Store
+Thumbs.db
