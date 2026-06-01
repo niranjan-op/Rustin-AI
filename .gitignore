@@ -14,7 +14,7 @@ __pycache__/
 # Application Specific Local Data
 .files/
 local_rag_db/
-.chainlit/
+.chainlit/translations/*
 
 # Temporary / Scratch / Debug files
 debug_settings.txt
@@ -42,4 +42,3 @@ public/*
 test_*.py
 *_test.js
 test_*.js
-
