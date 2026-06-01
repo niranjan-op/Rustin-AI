@@ -1,6 +1,7 @@
-# Autonomous Agent 🤖🚀
+# Rustin AI. 🤖
+Assistant by Design. Developer by Nature.
 
-Welcome to the **Autonomous Agent** repository! This is a powerful, locally-hosted AI agent built on top of [Chainlit](https://chainlit.io), [LangGraph](https://langchain-ai.github.io/langgraph/), and [Ollama](https://ollama.com/). It is designed to act as your personal coding assistant and automated worker, capable of writing code, managing files, and executing terminal commands autonomously.
+Welcome to the **Rustin AI** repository! This is a powerful, locally-hosted AI agent built on top of [Chainlit](https://chainlit.io), [LangGraph](https://langchain-ai.github.io/langgraph/), and [Ollama](https://ollama.com/). It is designed to act as your personal chatting assistant and coding agent capable of writing code, managing files, and executing terminal commands autonomously.
 
 ## ✨ Features
 
@@ -76,6 +77,4 @@ From the interface, you can start a new chat, ask the agent to write code, uploa
 
 The backend sandbox server (`public/server/app.js`) implements command filtering and path jailing to prevent the agent from accidentally running destructive system commands or traversing directories outside the active project workspace. 
 
-## 🤝 Contributing
 
-Contributions, issues, and feature requests are welcome! Feel free to check the issues page or submit a Pull Request.
