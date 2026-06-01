@@ -141,7 +141,8 @@ def init_sqlite_db(db_path="test.db"):
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL,
             metadata TEXT DEFAULT '{}' CHECK(json_valid(metadata)),
-            "git_branch" TEXT NOT NULL
+            "git_branch" TEXT NOT NULL,
+            user_identifier TEXT
         )
         """
     )
@@ -154,11 +155,23 @@ def init_sqlite_db(db_path="test.db"):
 
     patch_steps_table(cursor)
     patch_elements_for_images(cursor)
+    patch_projects_table(cursor)
 
     conn.commit()
     conn.close()
 
     print(f"[SUCCESS] SQLite database '{db_path}' is ready.")
+
+
+def patch_projects_table(cursor):
+    """
+    Patch older DB versions by adding user_identifier to PROJECTS.
+    """
+    try:
+        cursor.execute("ALTER TABLE PROJECTS ADD COLUMN user_identifier TEXT")
+        print("[+] Added column: user_identifier to PROJECTS")
+    except sqlite3.OperationalError:
+        print("[*] Column 'user_identifier' already exists in PROJECTS.")
 
 
 def patch_steps_table(cursor):

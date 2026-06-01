@@ -4,7 +4,9 @@ import uuid
 from datetime import datetime
 
 from chainlit.server import app
-from fastapi import HTTPException, Query
+from chainlit.auth import get_current_user
+from chainlit.user import User
+from fastapi import HTTPException, Query, Depends
 from pydantic import BaseModel, Field
 
 DB_PATH = ".files/test.db"
@@ -40,7 +42,8 @@ async def validate_path(
 
 
 @app.post(r"/api/projects/create-project", response_model=dict)
-async def create_project(project: ProjectCreate):
+async def create_project(project: ProjectCreate, current_user: User | None = Depends(get_current_user)):
+    user_identifier = current_user.identifier if current_user else "guest"
     normalized_path = os.path.normpath(os.path.expanduser(project.path))
     if not os.path.isdir(normalized_path):
         raise HTTPException(
@@ -55,8 +58,8 @@ async def create_project(project: ProjectCreate):
         project_id = str(uuid.uuid4())
         cursor.execute(
             """
-            INSERT INTO PROJECTS(id, name, path, description, created_at, updated_at, instructions, git_branch)
-            VALUES(?, ?, ?, ?, ?, ?, ?, ?);
+            INSERT INTO PROJECTS(id, name, path, description, created_at, updated_at, instructions, git_branch, user_identifier)
+            VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);
             """,
             (
                 project_id,
@@ -67,6 +70,7 @@ async def create_project(project: ProjectCreate):
                 str(datetime.now().isoformat()),
                 project.instructions,
                 "None",
+                user_identifier,
             ),
         )
         conn.commit()
@@ -87,15 +91,18 @@ async def create_project(project: ProjectCreate):
 
 
 @app.get(r"/api/projects/projects-list", response_model=list[ProjectListResponse])
-async def projects_list():
+async def projects_list(current_user: User | None = Depends(get_current_user)):
+    user_identifier = current_user.identifier if current_user else "guest"
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         cursor.execute(
             """
             SELECT id, name, path FROM projects
+            WHERE user_identifier = ?
             ORDER BY created_at DESC;
-            """
+            """,
+            (user_identifier,)
         )
         rows = cursor.fetchall()
         return [
@@ -110,15 +117,17 @@ async def projects_list():
 @app.delete(r"/api/projects/delete-project")
 async def delete_project(
     project_id: str = Query(..., description="The project ID to delete"),
+    current_user: User | None = Depends(get_current_user)
 ):
+    user_identifier = current_user.identifier if current_user else "guest"
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         cursor.execute(
             """
-            DELETE FROM PROJECTS WHERE id=?;
+            DELETE FROM PROJECTS WHERE id=? AND user_identifier = ?;
             """,
-            (project_id,),
+            (project_id, user_identifier),
         )
         conn.commit()
         if cursor.rowcount == 0:

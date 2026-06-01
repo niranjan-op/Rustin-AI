@@ -36,6 +36,25 @@ def get_free_port(preferred_port=8000):
     return port
 
 
+def ensure_ico_format(png_path):
+    """Converts a PNG image to ICO format dynamically for Windows."""
+    if not os.path.exists(png_path):
+        return png_path
+        
+    ico_path = png_path.rsplit('.', 1)[0] + '.ico'
+    if not os.path.exists(ico_path):
+        try:
+            from PIL import Image
+            img = Image.open(png_path)
+            img.save(ico_path, format='ICO', sizes=[(256, 256), (128, 128), (64, 64), (32, 32), (16, 16)])
+            print(f"Generated {ico_path} from {png_path}")
+        except Exception as e:
+            print(f"Failed to convert logo to ICO: {e}")
+            return png_path # fallback to png
+            
+    return ico_path
+
+
 def start_chainlit(target_file, port):
     """Runs the Chainlit server in a background thread."""
     from chainlit.config import config
@@ -65,12 +84,26 @@ if __name__ == "__main__":
     # 2. Give the Chainlit server a brief moment to spin up and bind
     time.sleep(10)
 
+    # Determine icon path dynamically
+    icon_path = os.path.abspath(os.path.join("public", "logo_dark.png"))
+    if sys.platform.startswith("win"):
+        icon_path = ensure_ico_format(icon_path)
+
     # 3. Initialize and boot up the pywebview native GUI window
     webview.create_window(
-        title="My Chat AI App",
+        title="Rustin AI",
         url=f"http://localhost:{port}",
         width=1000,
         height=750,
         resizable=True,
     )
-    webview.start(private_mode=False)
+    
+    # Force Windows to use the custom icon for the taskbar instead of python.exe default
+    if sys.platform.startswith("win"):
+        try:
+            import ctypes
+            myappid = "rustin.ai.coding.agent.1.0"
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+        except Exception as e:
+            print(f"Failed to set AppUserModelID: {e}")
+    webview.start(private_mode=False, icon=icon_path)

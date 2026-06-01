@@ -69,7 +69,7 @@
 }
 
 #project-modal {
-  background: #1a1a2e;
+  background: #050505;
   border-radius: 16px;
   padding: 24px;
   width: 440px;
@@ -201,8 +201,8 @@
 }
 
 .pm-project-card.active {
-  border-color: rgba(99, 102, 241, 0.6);
-  background: rgba(99, 102, 241, 0.12);
+  border-color: rgba(59, 130, 246, 0.6);
+  background: rgba(59, 130, 246, 0.12);
 }
 
 .pm-project-card .pm-card-icon {
@@ -211,7 +211,7 @@
 }
 
 .pm-project-card.active .pm-card-icon {
-  color: #818cf8;
+  color: #60A5FA;
 }
 
 .pm-card-info {
@@ -240,7 +240,7 @@
 
 .pm-card-check {
   flex-shrink: 0;
-  color: #818cf8;
+  color: #60A5FA;
 }
 
 /* Delete button on project cards */
@@ -262,8 +262,8 @@
 }
 
 .pm-card-delete:hover {
-  color: #ef4444 !important;
-  background: rgba(239, 68, 68, 0.12);
+  color: #3B82F6 !important;
+  background: rgba(59, 130, 246, 0.12);
 }
 
 /* ========================================
@@ -297,8 +297,8 @@
 
 .pm-input:focus {
   outline: none;
-  border-color: rgba(99, 102, 241, 0.6);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+  border-color: rgba(59, 130, 246, 0.6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
 }
 
 .pm-input::placeholder {
@@ -339,14 +339,14 @@ textarea.pm-input {
 }
 
 .pm-btn-primary {
-  background: #4f46e5;
-  border: 1px solid #4f46e5;
+  background: #3B82F6;
+  border: 1px solid #3B82F6;
   color: #fff;
 }
 
 .pm-btn-primary:hover {
-  background: #4338ca;
-  border-color: #4338ca;
+  background: #2563EB;
+  border-color: #2563EB;
 }
 
 .pm-btn-primary:active, .pm-btn-secondary:active {
@@ -355,13 +355,67 @@ textarea.pm-input {
 
 .pm-error-msg {
   display: none;
-  color: #ef4444;
+  color: #3B82F6;
   font-size: 11px;
   margin-top: 5px;
   font-weight: 500;
 }
 
 .pm-input.error {
-  border-color: #ef4444 !important;
-  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important;
+  border-color: #3B82F6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important;
+}
+
+/* ========================================
+   FORCE CHAINLIT THEME OVERRIDES (BLACK & BLUE)
+   ======================================== */
+
+/* Override CSS Variables for both MUI and Tailwind modes */
+:root, .dark, body {
+  --primary: 217 91% 60% !important; /* Blue-500 */
+  --primary-foreground: 0 0% 100% !important;
+  --background: 0 0% 0% !important; /* Absolute Black */
+  --card: 0 0% 2% !important;
+  --popover: 0 0% 2% !important;
+  --muted: 0 0% 5% !important;
+  
+  /* Legacy Chainlit / MUI variables */
+  --cl-primary-main: #3B82F6 !important;
+  --cl-primary-dark: #2563EB !important;
+  --cl-primary-light: #60A5FA !important;
+  --cl-background: #000000 !important;
+  --cl-paper: #050505 !important;
+  
+  /* MUI palette mapping if exposed */
+  --mui-palette-primary-main: #3B82F6 !important;
+  --mui-palette-background-default: #000000 !important;
+  --mui-palette-background-paper: #050505 !important;
+}
+
+/* Force absolute black backgrounds */
+body, #root, main, .bg-background {
+  background-color: #000000 !important;
+}
+
+/* Force sidebars, modals, message inputs to a slightly lighter grey for visibility */
+.bg-card, .bg-muted, .bg-popover, aside, [data-sidebar], .MuiPaper-root {
+  background-color: #161616 !important;
+}
+
+/* Explicitly target the chat message input composer so it is completely visible against the black background */
+#chat-input, .message-composer, .cl-message-composer, #message-composer, textarea, .MuiInputBase-root {
+  background-color: #262626 !important;
+  color: #ffffff !important;
+}
+
+/* Force any pink/red/coral elements (like the send button, avatar, notification badges) to blue */
+.bg-primary, .text-primary, .MuiAvatar-root, .MuiButton-containedPrimary, .MuiFab-primary, .MuiIconButton-colorPrimary, [class*="bg-rose-"], [class*="bg-red-"] {
+  background-color: #3B82F6 !important;
+  color: #ffffff !important;
+}
+
+/* Specifically target the Chainlit send message button and user avatar */
+button[id*="send"], button[class*="SendButton"], div[class*="Avatar"] {
+  background-color: #3B82F6 !important;
+  color: #ffffff !important;
 }

@@ -31,6 +31,18 @@
   }
 
   // =============================================
+  // Auth helpers
+  // =============================================
+  function getAuthToken() {
+    return localStorage.getItem("token") || "";
+  }
+
+  function getAuthHeaders() {
+    const token = getAuthToken();
+    return token ? { "Authorization": `Bearer ${token}` } : {};
+  }
+
+  // =============================================
   // State
   // =============================================
   const activeProject = getCookie("active_project")
@@ -51,7 +63,10 @@
   async function deleteProject(id) {
     try {
       const url = `/api/projects/delete-project?project_id=${encodeURIComponent(id)}`;
-      const response = await fetch(url, { method: "DELETE" });
+      const response = await fetch(url, { 
+        method: "DELETE",
+        headers: getAuthHeaders()
+      });
       if (!response.ok) {
         const errData = await response.json();
         throw new Error(errData.detail || "Failed to delete project");
@@ -217,7 +232,9 @@
   // --- Fetch projects list from backend ---
   async function listProjects() {
     try {
-      const response = await fetch(`/api/projects/projects-list`);
+      const response = await fetch(`/api/projects/projects-list`, {
+        headers: getAuthHeaders()
+      });
       if (!response.ok) throw new Error("Error fetching projects");
       return await response.json();
     } catch (error) {
@@ -232,7 +249,9 @@
   async function validatePath(path) {
     try {
       const url = `/api/projects/validate-path?path=${encodeURIComponent(path)}`;
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        headers: getAuthHeaders()
+      });
       if (!response.ok) throw new Error("Network response was not ok");
       const result = await response.json();
       return result.exists;
@@ -390,7 +409,10 @@
         try {
           const response = await fetch("/api/projects/create-project", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { 
+              "Content-Type": "application/json",
+              ...getAuthHeaders()
+            },
             body: JSON.stringify({
               name,
               path,

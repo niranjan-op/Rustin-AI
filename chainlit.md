@@ -1,14 +1,24 @@
-# Welcome to Chainlit! 🚀🤖
+# Welcome to the Autonomous Agent 🚀🤖
 
-Hi there, Developer! 👋 We're excited to have you on board. Chainlit is a powerful tool designed to help you prototype, debug and share applications built on top of LLMs.
+Hi there, Developer! 👋 Welcome to your locally-hosted, fully autonomous coding assistant. This agent is powered by **Chainlit**, **LangGraph**, and **Ollama**, giving you a private, powerful AI capable of managing your entire workflow.
 
-## Useful Links 🔗
+## ✨ Core Features
 
-- **Documentation:** Get started with our comprehensive [Chainlit Documentation](https://docs.chainlit.io) 📚
-- **Discord Community:** Join our friendly [Chainlit Discord](https://discord.gg/k73SQ3FyUh) to ask questions, share your projects, and connect with other developers! 💬
+- **Project Isolation**: Every chat thread operates in its own isolated workspace.
+- **Terminal & Sandbox**: The agent has native access to a Node.js-based terminal sandbox to run commands, install dependencies, and build your projects securely. You can toggle this access in the chat settings!
+- **Vision Models (VLMs)**: Upload screenshots, architecture diagrams, or mockups. The agent will read them natively to write UI code or answer questions.
+- **Git Integration**: The agent tracks its own file changes, manages `.gitignore`, and handles basic repository tracking automatically.
 
-We can't wait to see what you create with Chainlit! Happy coding! 💻😊
+## 🛠️ How to Use
 
-## Welcome screen
+1. **Start a New Chat**: Click the new chat button to spin up a fresh workspace.
+2. **Give Instructions**: Tell the agent to build an app, fix a bug, or write a test suite.
+3. **Toggle Settings**: Open the chat settings to grant or revoke "Terminal Access" depending on whether you want the agent to execute code on your machine.
+4. **Upload Attachments**: Drag and drop images or documents straight into the chat.
 
-To modify the welcome screen, edit the `chainlit.md` file at the root of your project. If you do not want a welcome screen, just leave this file empty.
+## 🔗 Useful Links
+
+- **Ollama Models:** [Explore available local models](https://ollama.com/library)
+- **LangGraph Docs:** [Learn about the agent reasoning graph](https://langchain-ai.github.io/langgraph/)
+
+Ready to code? Just type a prompt below and let the agent do the heavy lifting! 💻😊
