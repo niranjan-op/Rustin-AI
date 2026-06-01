@@ -14,13 +14,10 @@ Welcome to the **Autonomous Agent** repository! This is a powerful, locally-host
 
 ## 📸 Screenshots
 
-*(Replace these placeholders with your actual app screenshots!)*
 
-![Welcome Screen](/public/welcome-screenshot.png)
+![Welcome Screen](/src/Chat_Interface.png)
 *Agent Welcome Screen and Project Setup*
-
-![Agent Execution](/public/execution-screenshot.png)
-*Agent autonomously generating code and running commands*
+![Working Agent ](/src/Agent.png)
 
 ## 🚀 Getting Started
 
