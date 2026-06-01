@@ -30,3 +30,9 @@ node_modules/
 # OS specific files
 .DS_Store
 Thumbs.db
+
+# Ignore dynamically generated folders in public/
+public/*
+!public/custom.css
+!public/custom.js
+!public/server/
