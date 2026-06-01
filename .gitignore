@@ -36,3 +36,10 @@ public/*
 !public/custom.css
 !public/custom.js
 !public/server/
+
+# Test files
+*_test.py
+test_*.py
+*_test.js
+test_*.js
+
