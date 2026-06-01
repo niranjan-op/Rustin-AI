@@ -34,8 +34,8 @@ To run this project, you will need the following installed on your system:
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/your-username/autonomous-agent.git
-   cd autonomous-agent
+   git clone https://github.com/niranjan-op/Rustin-AI
+   cd Rustin-AI
    ```
 
 2. **Create a virtual environment:**
@@ -52,24 +52,18 @@ To run this project, you will need the following installed on your system:
 3. **Install the Python dependencies:**
    Ensure your virtual environment is active, then install the required libraries:
    ```bash
-   pip install chainlit langchain langchain-ollama langgraph ollama aiosqlite sqlalchemy pydantic
-   ```
-
-4. **Start Ollama:**
-   Ensure Ollama is running in the background and that you have pulled your preferred models (e.g., Llama 3, Mistral, or CodeQwen).
-   ```bash
-   ollama run llama3
+   pip install -r requirements.txt
    ```
 
 ### Usage
 
-To start the agent's web interface, run the Chainlit server from the root directory:
+To start the agent's GUI interface, run the Chainlit server from the root directory:
 
 ```bash
-chainlit run app.py -w
+py main.py
 ```
 
-This will automatically start the backend Node server and open the web interface in your default browser (usually at `http://localhost:8000`). 
+This will automatically start the backend Node server and open a GUI interface to the Rustin AI Agent.
 
 From the interface, you can start a new chat, ask the agent to write code, upload images for vision tasks, and give the agent access to run safe terminal commands by toggling the "Terminal Access" setting!
 
