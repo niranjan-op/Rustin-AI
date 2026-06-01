@@ -14,7 +14,6 @@ __pycache__/
 # Application Specific Local Data
 .files/
 local_rag_db/
-.chainlit/translations/*
 
 # Temporary / Scratch / Debug files
 debug_settings.txt
