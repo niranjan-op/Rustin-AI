@@ -54,7 +54,24 @@ To run this project, you will need the following installed on your system:
    ```bash
    pip install -r requirements.txt
    ```
+4. **Create a .env file**:
+   Create a .env file in the same directory, run the following command and paste it into the .env
+   ```bash
+   chainlit create-secret
+   ```
+  Add your google genai api key into the env file as 
+  ```bash
+  GOOGLE_API_KEY = ""
+  ```
 
+  **NOTE:**
+  The project supports use of ollama models. To use them, modify the base_llm models.py file as:
+  ```python
+  base_llm = ChatOllama(
+    model="model_name", temperature=0.5, base_url="http://127.0.0.1:11434"
+    )
+  ```
+  
 ### Usage
 
 To start the agent's GUI interface, run the Chainlit server from the root directory:
@@ -69,6 +86,4 @@ From the interface, you can start a new chat, ask the agent to write code, uploa
 
 ## 🛡️ Security
 
-The backend sandbox server (`public/server/app.js`) implements command filtering and path jailing to prevent the agent from accidentally running destructive system commands or traversing directories outside the active project workspace. 
-
-
+The backend sandbox server (`public/server/app.js`) implements command filtering and path jailing to prevent the agent from accidentally running destructive system commands or traversing directories outside the active project workspace.
