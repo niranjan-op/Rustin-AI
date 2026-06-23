@@ -1,7 +1,7 @@
 from langchain_core.tools import tool
 
-from git_manager import GitManager
-from memory import query_long_term_memory
+from services.git_manager import GitManager
+from core.memory import query_long_term_memory
 
 
 # @tool
@@ -67,13 +67,7 @@ def execute_command_terminal(command: str) -> str:
     like executing code, compiling, checking versions, or creating virtual environments.
     WARNING: On Windows, this runs via cmd.exe. Do NOT use pipe `|` or redirect `<` `>` characters in your python -c commands or strings, as cmd.exe will parse them and cause syntax errors. Create a python file using create_file_to_wkng_dir and execute it instead for complex scripts.
     """
-    # """
-    # Execute a bash/shell command inside a secure Docker sandbox container.
-    # You can run python code here using: python -c "..." or by writing code to files and running them.
-    # Input: a single bash command string.
-    # """
-    # return execute_command_in_sandbox(command)
-    import sandbox_node
+    from sandbox import node_sandbox as sandbox_node
 
     _update_active_project_path()
     result = sandbox_node.node_instance.execute_command(command)
@@ -85,8 +79,7 @@ def _update_active_project_path():
     import urllib.parse
 
     from chainlit.context import get_context
-
-    import sandbox_node
+    from sandbox import node_sandbox as sandbox_node
 
     project_path = None
     project_id = None
@@ -136,7 +129,7 @@ def stop_node_server() -> str:
     """
     Stops the Node.js terminal server. Use this tool when you have finished executing commands and setting up/testing the application, to clean up resources.
     """
-    import sandbox_node
+    from sandbox import node_sandbox as sandbox_node
 
     sandbox_node.node_instance.shutdown()
     return "Node server stopped successfully."
@@ -148,7 +141,7 @@ def create_file_to_wkng_dir(name: str, content: str) -> str:
     Create a new file in the current project directory with the given content.
     Input format: name: str (e.g. 'script.py'), content: str (the code)
     """
-    import sandbox_node
+    from sandbox import node_sandbox as sandbox_node
 
     path = _update_active_project_path()
     if not path:
@@ -167,7 +160,7 @@ def append_file_to_wkng_dir(name: str, content: str) -> str:
     Append text content to an existing file in the current project directory.
     Input format: name: str (e.g. 'script.py'), content: str (the code)
     """
-    import sandbox_node
+    from sandbox import node_sandbox as sandbox_node
 
     path = _update_active_project_path()
     if not path:

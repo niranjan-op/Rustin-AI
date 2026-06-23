@@ -15,10 +15,66 @@ Welcome to the **Rustin AI** repository! This is a powerful, locally-hosted AI a
 
 ## 📸 Screenshots
 
-
-![Welcome Screen](/src/Chat_Interface.png)
+![Welcome Screen](docs/screenshots/Chat_Interface.png)
 *Agent Welcome Screen and Project Setup*
-![Working Agent ](/src/Agent.png)
+
+![Working Agent](docs/screenshots/Agent.png)
+
+## 🗂️ Project Structure
+
+```
+Rustin-AI/
+│
+├── app.py                   # Chainlit entry point (UI, auth, message routing)
+├── main.py                  # pywebview desktop launcher
+│
+├── agent/                   # LangGraph workflow
+│   ├── graph.py             # Graph compilation & edges
+│   ├── nodes.py             # Orchestrator LLM node functions
+│   └── states.py            # AgentState TypedDict
+│
+├── core/                    # AI models, prompts, and memory
+│   ├── models.py            # LLM instances (Gemini, Ollama)
+│   ├── prompts.py           # System prompt templates
+│   └── memory.py            # ChromaDB long-term memory (RAG)
+│
+├── tools/                   # LangChain @tool definitions
+│   └── coding_tools.py      # Terminal, file, and Git tools
+│
+├── sandbox/                 # Execution environments
+│   ├── node_sandbox.py      # Node.js terminal server manager
+│   └── docker_sandbox.py    # Docker-based sandbox (reserved)
+│
+├── services/                # Third-party service wrappers
+│   ├── git_manager.py       # Git operations via dulwich
+│   └── ollama_manager.py    # Ollama server lifecycle
+│
+├── db/                      # Database layer
+│   ├── database.py          # SQLite schema init & patching
+│   └── migrate.py           # One-off data migrations
+│
+├── api/                     # FastAPI route handlers
+│   └── projects.py          # Project CRUD endpoints
+│
+├── scripts/                 # Developer utility scripts
+│   ├── query_db.py          # Inspect recent threads
+│   ├── test_db.py           # List projects in DB
+│   └── test_users.py        # List users in DB
+│
+├── tests/                   # Manual/automated tests
+│   ├── node_test.py         # Sandbox server smoke test
+│   └── tools_test.py        # Tool function smoke test
+│
+├── public/                  # Static assets & Node server
+│   ├── server/app.js        # Node.js terminal sandbox server
+│   ├── custom.css           # Chainlit UI overrides
+│   └── custom.js            # Chainlit UI extensions
+│
+├── docs/                    # Documentation assets
+│   └── screenshots/         # UI screenshots
+│
+└── local_rag_db/            # ChromaDB persistent vector store
+```
 
 ## 🚀 Getting Started
 
@@ -65,7 +121,7 @@ To run this project, you will need the following installed on your system:
   ```
 
   **NOTE:**
-  The project supports use of ollama models. To use them, modify the base_llm models.py file as:
+  The project supports use of ollama models. To use them, modify the base_llm in `core/models.py` as:
   ```python
   base_llm = ChatOllama(
     model="model_name", temperature=0.5, base_url="http://127.0.0.1:11434"

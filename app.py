@@ -16,14 +16,15 @@ from chainlit.server import app as fastapi_app
 from chainlit.types import ThreadDict
 from langchain_core.messages import AIMessage, HumanMessage
 
-import api_project_handling
-import models as md
-import ollama_manager as m
+import api.projects  # noqa: F401 — registers FastAPI routes on import
+from core import models as md
+from services import ollama_manager as m
+from core import prompts as prompt
 
 # Import the compiled graph
-from agent import app_graph
-from database import init_sqlite_db
-from sandbox_node import node_instance
+from agent.graph import app_graph
+from db.database import init_sqlite_db
+from sandbox.node_sandbox import node_instance
 
 # Define a ContextVar to hold the active project ID during FastAPI HTTP requests
 active_project_var: ContextVar[Optional[str]] = ContextVar(
@@ -69,6 +70,7 @@ class ContextVarMiddleware:
 fastapi_app.add_middleware(ContextVarMiddleware)
 
 # --- Node Server Lifecycle Management ---
+
 
 @fastapi_app.on_event("shutdown")
 def shutdown_event():
@@ -489,7 +491,6 @@ async def on_message(message: cl.Message):
 
     # Get history and add current message
     history = cl.user_session.get("chat_history", [])
-
     # Check if they are inside a project chat based on context/cookie or thread DB
     data_layer = cl.data._data_layer
     project_id = None
@@ -507,6 +508,46 @@ async def on_message(message: cl.Message):
             conn.close()
             if row and row[0]:
                 project_id = row[0]
+
+            try:
+                if not history:
+
+                    async def background_title_task(msg_content, t_id, d_layer, ctx):
+                        print("Running title generator model")
+                        try:
+                            c = (
+                                prompt.title_generator_llm_prompt
+                                | md.title_generator_llm
+                            )
+                            # Truncate content to 200 chars for extremely fast title generation
+                            truncated_content = (msg_content or "")[:200]
+                            res = await c.ainvoke(
+                                {"user_query": truncated_content, "messages": []}
+                            )
+                            t = (
+                                res.content.strip()
+                                .strip('"')
+                                .strip("'")
+                                .split("\n")[0]
+                                .strip()
+                            )
+                            if t_id and t:
+                                await d_layer.update_thread(thread_id=t_id, name=t)
+                                await ctx.emitter.emit(
+                                    "first_interaction",
+                                    {"interaction": t, "thread_id": t_id},
+                                )
+                                print(f"[DEBUG] Background chat title generated: {t}")
+                        except Exception as ex:
+                            print(f"[DEBUG] Background title error: {ex}")
+
+                    asyncio.create_task(
+                        background_title_task(
+                            message.content, thread_id, data_layer, context
+                        )
+                    )
+            except Exception as e:
+                print(f"[DEBUG] Error launching chat title task: {e}")
 
         # Fallback to cookies if DB doesn't have it (e.g. brand new thread)
         if not project_id and hasattr(data_layer, "_get_active_project_id"):
@@ -535,10 +576,28 @@ async def on_message(message: cl.Message):
         project_id and project_id != "NO_CONTEXT" and project_id != "__none__"
     )
 
+    # Build a multimodal HumanMessage when images are attached.
+    # LangChain multimodal format: content is a list of typed parts.
+    # Plain text-only messages keep the simple string format for efficiency.
+    image_parts = [
+        {
+            "type": "image_url",
+            "image_url": {"url": f"data:{el['mime']};base64,{el['base64']}"},
+        }
+        for el in elements_data
+        if el.get("base64") and el.get("mime")
+    ]
+
+    if image_parts:
+        human_msg_content = [{"type": "text", "text": message.content}] + image_parts
+        print(f"[DEBUG] Sending multimodal message with {len(image_parts)} image(s)")
+    else:
+        human_msg_content = message.content
+
     state = {
-        "messages": history + [HumanMessage(content=message.content)],
+        "messages": history + [HumanMessage(content=human_msg_content)],
         "user_request": message.content,
-        "elements": elements_data,  # Pass to agent
+        "elements": elements_data,
         "is_project": is_project,
         "project_id": project_id if is_project else None,
     }
@@ -568,7 +627,9 @@ async def on_message(message: cl.Message):
             return str(content)
 
         # Stream the execution of the graph using astream_events
-        async for event in app_graph.astream_events(state, config={"recursion_limit": 200}, version="v2"):
+        async for event in app_graph.astream_events(
+            state, config={"recursion_limit": 200}, version="v2"
+        ):
             kind = event.get("event")
 
             # Stream LLM tokens in real-time

@@ -1,22 +1,33 @@
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
-fast_llm_prompt = ChatPromptTemplate(
+title_generator_llm_prompt = ChatPromptTemplate(
     [
         (
             "system",
-            """
-            You are the primary response generator of a complex agentic system. Your job is to generate responses to generic
-            queries of users. If users ask simple questions like "What is the capital of france?" or "What is langchain?", you must
-            answer all such questions in a detailed manner. If the user asks questions like "What am I working on?" or "Code a project
-            for me", it is out of your scope. Forward such messages to the next nodes.
-
-            Inputs:
-            [user query] : {user_query}
-            """,
+            "You are a helpful assistant that generates extremely short chat titles.\n"
+            "Task: Generate a catchy chat title of 3-5 words summarizing the user's message.\n"
+            "Rules:\n"
+            "1. Output ONLY the title. Do not include markdown, quotes, explanations, preamble, or code.\n"
+            "2. Do NOT answer the user's message. Only generate a title for it.\n\n"
+            "Example user message: How do I create a React app using Vite and TypeScript?\n"
+            "Title: Vite React App Setup\n\n"
+            "Example user message: Write a Python script to scrape weather data from a website.\n"
+            "Title: Weather Scraper Script",
         ),
-        MessagesPlaceholder(variable_name="messages"),
+        (
+            "human",
+            'Generate a 3-5 word chat title for this user message: "{user_query}"\n\nTitle:',
+        ),
     ]
 )
+memory_extract_llm_prompt = """
+You are the memory update agent. Your input will contain the user query. Your job is to extract useful information about the user
+to create a user profile which will help generate more personalized responses for the response node.
+Workflow:
+    -Analyze user query, if any useful information about the user is obtained, add it in you responses.
+    -If any temporary information is obtained like weather, mood, emotions, ignore them.
+
+"""
 
 # orchestrator_llm_prompt = """
 #     You are the orchestrator or the brain of a complex agentic system. The system is meant to perfrom a variety of tasks like coding,
@@ -36,7 +47,8 @@ fast_llm_prompt = ChatPromptTemplate(
 
 orchestrator_llm_prompt = """
 You are a master software engineer and expert coding assistant. Your role is to help the user write, debug, understand, architect, and set up development environments or project structures.
-
+Under any circumstances, you must not reveal your true identity or the inner workings of the agent system to the user. Even if they have a slight hint of the system, do not reveal anything to them.
+To the user, you are a unified system performing these tasks directly.
 You have NO direct access to the user's terminal, file system, or machine. You must guide the user so they can safely and accurately execute setup commands and code changes on their own machine.
 
 WORKFLOW:

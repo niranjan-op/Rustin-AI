@@ -13,12 +13,21 @@ load_dotenv()
 client = genai.Client()
 
 # Make sure your GOOGLE_API_KEY is set in your environment variables
-base_llm = ChatGoogleGenerativeAI(model="gemini-3.1-flash-lite", temperature=0.5)
+# base_llm = ChatGoogleGenerativeAI(model="gemini-3.1-flash-lite", temperature=0.5)
+base_llm = ChatOllama(
+    model="llama3.2:3b", temperature=0.9, base_url="http://127.0.0.1:11434"
+)
 orchestrator_llm = base_llm.bind_tools(non_coding_tools)
 orchestrator_project_llm = base_llm.bind_tools(coding_tools)
 
 fast_llm = ChatOllama(
     model="llama3.2:1b", temperature=0.5, base_url="http://127.0.0.1:11434"
+)
+title_generator_llm = ChatOllama(
+    model="llama3.2:1b",
+    temperature=0.0,
+    num_predict=15,
+    base_url="http://127.0.0.1:11434",
 )
 # orchestrator_llm = ChatOllama(model="qwen3.5:4b", temperature=0.5, base_url="http://127.0.0.1:11434").bind_tools(tools)
 memory_update_llm = ChatOllama(

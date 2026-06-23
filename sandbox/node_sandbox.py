@@ -30,7 +30,7 @@ class Node:
         print("Starting Node.js server...")
 
         # Absolute path to the app.js script
-        script_path = str(Path(__file__).parent / "public" / "server" / "app.js")
+        script_path = str(Path(__file__).parent.parent / "public" / "server" / "app.js")
 
         # Use self.project_path if available, otherwise fallback to current directory
         cwd = (

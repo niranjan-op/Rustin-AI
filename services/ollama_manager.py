@@ -8,8 +8,6 @@ import urllib.request
 import ollama
 import psutil
 
-
-
 import psutil
 import sys
 
@@ -17,13 +15,13 @@ import urllib.request
 import psutil
 
 
-def try_ollama(port,timeout=1):
+def try_ollama(port, timeout=1):
     """
     Verify whether Ollama is responding on a port.
     """
     try:
-        with urllib.request.urlopen( f"http://127.0.0.1:{port}/api/tags",timeout = timeout) as response:
-            if response.status!= 200:
+        with urllib.request.urlopen(f"http://127.0.0.1:{port}/api/tags", timeout=timeout) as response:
+            if response.status != 200:
                 return False
             else:
                 return True
@@ -34,12 +32,12 @@ def discover_ollama_port():
     """
     Discover the active Ollama port.
     """
-    if try_ollama(11434,3):
+    if try_ollama(11434, 3):
         return 11434
     ollama_pids = set()
-    for proc in psutil.process_iter(["pid","name"]):
+    for proc in psutil.process_iter(["pid", "name"]):
         try:
-            name  = proc.info["name"]
+            name = proc.info["name"]
             if name and "ollama" in name.lower():
                 ollama_pids.add(proc.info["pid"])
 
@@ -105,7 +103,7 @@ def _start_server():
         # Give it a few seconds to warm up
         time.sleep(3)
 
-        if try_ollama(11434,3):
+        if try_ollama(11434, 3):
             print("[Ollama] Ollama server started successfully!")
         else:
             print("[Ollama] Ollama started, but might still be warming up.")
@@ -116,20 +114,17 @@ def _start_server():
         )
 
 def is_ollama_running():
-    if(try_ollama(11434,3)):
+    if(try_ollama(11434, 3)):
         return 11434
     else:
         port = discover_ollama_port()
         if port:
-            if try_ollama(port=port,timeout=3):
+            if try_ollama(port=port, timeout=3):
                 return True
         else:
             _start_server()
-            status = try_ollama(11434,3)
+            status = try_ollama(11434, 3)
             if status: 
                 return status
             status = discover_ollama_port()
             return status
-            
-                
-                

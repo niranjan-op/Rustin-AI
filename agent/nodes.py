@@ -1,17 +1,16 @@
 import json
 import time
-import chainlit as cl
 
+import chainlit as cl
 from langchain_core.messages import AIMessage, HumanMessage
 
-from memory import add_to_long_term_memory
-from models import fast_llm, orchestrator_llm, orchestrator_project_llm
-from prompts import (
-    fast_llm_prompt,
+from agent.states import AgentState
+from core.memory import add_to_long_term_memory
+from core.models import fast_llm, orchestrator_llm, orchestrator_project_llm
+from core.prompts import (
     orchestrator_llm_prompt,
     orchestrator_project_llm_prompt,
 )
-from states import AgentState
 from tools import search_db
 
 
@@ -26,7 +25,7 @@ async def fast_llm_node(state: AgentState):
 
 async def orchestrator_llm_node(state: AgentState):
     is_project = state.get("is_project", False)
-    
+
     # Read terminal_access from Chainlit user session, default to True if not explicitly False
     terminal_access = True
     try:
