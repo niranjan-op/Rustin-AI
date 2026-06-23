@@ -298,9 +298,15 @@ async def auth_callback(username: str, password: str):
 async def update_settings_widgets(is_project: bool, current_settings: dict = None):
     settings_list = []
 
+    # Ensure current_settings is a dictionary
+    if current_settings is None:
+        current_settings = cl.user_session.get("settings")
+        if current_settings is None:
+            current_settings = {}
+
     if is_project:
         initial_terminal = True
-        if current_settings and "terminal_access" in current_settings:
+        if "terminal_access" in current_settings:
             initial_terminal = current_settings["terminal_access"]
 
         settings_list.append(
@@ -310,18 +316,17 @@ async def update_settings_widgets(is_project: bool, current_settings: dict = Non
                 initial=initial_terminal,
             )
         )
-        if current_settings:
-            current_settings["terminal_access"] = initial_terminal
+        current_settings["terminal_access"] = initial_terminal
     else:
-        if current_settings:
-            current_settings["terminal_access"] = False
+        current_settings["terminal_access"] = False
 
     settings = await cl.ChatSettings(settings_list).send()
-    if current_settings is not None:
-        cl.user_session.set("settings", current_settings)
-    else:
-        cl.user_session.set("settings", settings)
-    return settings
+    
+    if isinstance(settings, dict):
+        current_settings.update(settings)
+
+    cl.user_session.set("settings", current_settings)
+    return current_settings
 
 
 @cl.on_chat_start
@@ -626,14 +631,43 @@ async def on_message(message: cl.Message):
                 return "".join(text_parts)
             return str(content)
 
+        # Track active steps for tool executions
+        active_steps = {}
+
+        # Create a general "Thinking" step for the overall process
+        main_thinking_step = cl.Step(name="Thinking...", type="run")
+        await main_thinking_step.send()
+
         # Stream the execution of the graph using astream_events
         async for event in app_graph.astream_events(
             state, config={"recursion_limit": 200}, version="v2"
         ):
             kind = event.get("event")
+            name = event.get("name")
+            run_id = event.get("run_id")
+
+            # Track tool execution in Chainlit Steps
+            if kind == "on_tool_start":
+                tool_step = cl.Step(name=f"Tool: {name}", type="tool", parent_id=main_thinking_step.id)
+                tool_step.input = event.get("data", {}).get("input")
+                await tool_step.send()
+                active_steps[run_id] = tool_step
+
+            elif kind == "on_tool_end":
+                tool_step = active_steps.get(run_id)
+                if tool_step:
+                    # Get output
+                    out_data = event.get("data", {}).get("output")
+                    # Try to format the output nicely
+                    if hasattr(out_data, "content"):
+                        tool_step.output = out_data.content
+                    else:
+                        tool_step.output = str(out_data)
+                    await tool_step.update()
+                    del active_steps[run_id]
 
             # Stream LLM tokens in real-time
-            if kind == "on_chat_model_stream":
+            elif kind == "on_chat_model_stream":
                 chunk = event.get("data", {}).get("chunk")
                 if chunk is None:
                     continue
@@ -730,6 +764,9 @@ async def on_message(message: cl.Message):
         assistant_msg = _extract_text(assistant_msg)
     if not assistant_msg.strip():
         assistant_msg = "Agent completed but produced no visible output."
+
+    if 'main_thinking_step' in locals():
+        await main_thinking_step.update()
 
     print(f"[DEBUG] Final msg.content = {repr(assistant_msg[:200])}")
     msg.content = assistant_msg
