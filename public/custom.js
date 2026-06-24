@@ -169,6 +169,7 @@
   // Position tracking — follow sidebar's right edge
   // =============================================
   let lastLeft = -1;
+  let lastWidth = -1;
   let cachedSidebar = null;
   let cacheTime = 0;
 
@@ -177,6 +178,7 @@
 
     const GAP = 16;
     const now = Date.now();
+    const currentWidth = window.innerWidth;
 
     // Re-scan for sidebar element every 500ms (not every frame — perf)
     if (!cachedSidebar || now - cacheTime > 500) {
@@ -184,30 +186,49 @@
       cacheTime = now;
     }
 
-    let targetLeft = GAP; // default if no sidebar found
+    let targetLeft = 140; // Default if no sidebar found to leave room for collapsed toggle buttons
+    let sidebarRightEdge = 0;
 
     if (cachedSidebar) {
       const rect = cachedSidebar.getBoundingClientRect();
-      if (rect.width > 0) {
+      if (rect.width > 0 && rect.right > 0) {
         targetLeft = Math.round(rect.right) + GAP;
+        sidebarRightEdge = Math.round(rect.right);
       }
     }
 
-    // Clamp so button never goes off-screen left
-    targetLeft = Math.max(GAP, targetLeft);
+    // Clamp so button never goes into the left-side icon area when sidebar is closed
+    targetLeft = Math.max(140, targetLeft);
 
     // Only update DOM if value actually changed
-    if (targetLeft !== lastLeft) {
-      btn.style.left = targetLeft + "px";
+    if (targetLeft !== lastLeft || currentWidth !== lastWidth) {
+      const brand = document.getElementById("persistent-brand");
+      if (brand) {
+         brand.style.left = targetLeft + "px";
+      }
+      
+      const centerLeft = sidebarRightEdge + (currentWidth - sidebarRightEdge) / 2;
+      btn.style.left = centerLeft + "px";
+      btn.style.transform = "translateX(-50%)";
+      
       lastLeft = targetLeft;
+      lastWidth = currentWidth;
     }
 
     requestAnimationFrame(trackPosition);
   }
 
   // =============================================
-  // Create Button (instant, fixed position)
+  // Create Brand & Button (instant, fixed position)
   // =============================================
+  function createPersistentBrand() {
+    if (document.getElementById("persistent-brand")) return;
+    const brand = document.createElement("div");
+    brand.id = "persistent-brand";
+    brand.innerHTML = `<img src="/public/logo_dark.png" class="brand-logo" alt="Logo" /> <span>Rustin AI.</span>`;
+    document.body.appendChild(brand);
+  }
+
   function createButton() {
     if (document.getElementById("project-dropdown-btn")) return;
 
@@ -558,6 +579,7 @@
   function boot() {
     // Initial check
     if (!window.location.pathname.startsWith("/login")) {
+      createPersistentBrand();
       createButton();
     }
 
@@ -600,6 +622,7 @@
         document.body.classList.remove("is-login-page");
         if (!btnExists) {
           btn = null;
+          createPersistentBrand();
           createButton();
         }
 
@@ -622,8 +645,8 @@
           // Find the main textarea (the message composer)
           const textarea = document.querySelector('textarea[placeholder*="message"], textarea[placeholder*="Message"], textarea');
           
-          // Find the logo image on the welcome screen
-          const logoImg = document.querySelector('img[src*="logo"]');
+          // Find the logo image on the welcome screen (ignoring header logos)
+          const logoImg = document.querySelector('img[src*="logo"]:not(.brand-logo):not(#login-logo-img)');
           
           if (!hasMessages && textarea && logoImg) {
              const welcomeContainer = document.createElement("div");

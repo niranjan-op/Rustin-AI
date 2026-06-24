@@ -95,7 +95,7 @@ reaction_on_message_received = false
 
 [UI]
 # Name of the assistant.
-name = "Rustin"
+name = "Rustin AI."
 
 # default_theme = "dark"
 default_theme = "dark"
@@ -125,14 +125,14 @@ cot = "tool_call"
 
 # Specify a CSS file that can be used to customize the user interface.
 # The CSS file can be served from the public directory or via an external link.
-custom_css = "/public/custom.css?v=19"
+custom_css = "/public/custom.css?v=21"
 
 # Specify additional attributes for a custom CSS file
 # custom_css_attributes = "media=\"print\""
 
 # Specify a JavaScript file that can be used to customize the user interface.
 # The JavaScript file can be served from the public directory.
-custom_js = "/public/custom.js?v=21"
+custom_js = "/public/custom.js?v=25"
 
 # The style of alert boxes. Can be "classic" or "modern".
 alert_style = "modern"

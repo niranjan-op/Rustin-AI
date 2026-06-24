@@ -48,6 +48,47 @@
 }
 
 /* ========================================
+   PERSISTENT BRAND LOGO
+   ======================================== */
+#persistent-brand {
+  position: fixed;
+  top: 10px;
+  /* left set dynamically in js */
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  pointer-events: none;
+  transition: left 0.15s ease;
+}
+
+#persistent-brand img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+#persistent-brand span {
+  font-family: inherit;
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #fff;
+}
+
+html[data-theme="light"] #persistent-brand span,
+:root:not(.dark) #persistent-brand span {
+  color: #000;
+}
+
+/* Hide Chainlit native top-left logo completely */
+a[href="/"] > img {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  width: 0 !important;
+}
+
+/* ========================================
    Modal Overlay
    ======================================== */
 
