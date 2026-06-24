@@ -14,11 +14,12 @@ Welcome to the **Rustin AI** repository! This is a powerful, locally-hosted AI a
 - **Native Git Management**: Capable of reading `.gitignore` files, managing git repositories, and generating structured artifacts.
 
 ## 📸 Screenshots
-
-![Welcome Screen](docs/screenshots/Chat_Interface.png)
 *Agent Welcome Screen and Project Setup*
-
-![Working Agent](docs/screenshots/Agent.png)
+![Welcome Screen](docs/screenshots/Landing_page.png)
+*Create New Projects!*
+![Create New Projects](docs/screenshots/Create-new-project.gif)
+*Agent Uses Tool Calling for executing tasks*
+![Working Agent](docs/screenshots/working_agent.png)
 
 ## 🗂️ Project Structure
 

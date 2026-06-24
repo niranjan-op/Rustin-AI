@@ -12,6 +12,17 @@ if sys.platform.startswith("win"):
     except AttributeError:
         pass
 
+# Setup logging for debugging
+def setup_logging(home_dir):
+    try:
+        log_file = os.path.join(home_dir, "rustin_ai.log")
+        f = open(log_file, "w", encoding="utf-8")
+        sys.stdout = f
+        sys.stderr = f
+        print("Logging initialized.")
+    except Exception as e:
+        pass
+
 import webview
 from chainlit.cli import run_chainlit
 
@@ -70,7 +81,44 @@ def start_chainlit(target_file, port):
     run_chainlit(target_file)
 
 
+import shutil
+from pathlib import Path
+
+def setup_persistent_workspace():
+    """Sets up a persistent workspace in the user's home directory."""
+    if not getattr(sys, 'frozen', False):
+        return
+        
+    home_dir = Path.home() / ".rustin_ai"
+    home_dir.mkdir(parents=True, exist_ok=True)
+    
+    meipass = Path(sys._MEIPASS)
+    
+    # Assets to copy from the bundled EXE to the persistent workspace
+    assets = ["app.py", "chainlit.md", ".chainlit", "public"]
+    
+    for asset in assets:
+        src = meipass / asset
+        dst = home_dir / asset
+        
+        if src.exists():
+            if src.is_dir():
+                if not dst.exists():
+                    shutil.copytree(src, dst)
+            else:
+                if not dst.exists():
+                    shutil.copy2(src, dst)
+                    
+    # Change current working directory to the persistent workspace
+    os.chdir(home_dir)
+    print(f"Working directory set to: {home_dir}")
+    return home_dir
+
 if __name__ == "__main__":
+    home_dir = setup_persistent_workspace()
+    if home_dir:
+        setup_logging(home_dir)
+    
     # Define your Chainlit script filename
     chainlit_script = "app.py"
     port = get_free_port()

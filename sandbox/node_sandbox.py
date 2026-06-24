@@ -29,6 +29,14 @@ class Node:
 
         print("Starting Node.js server...")
 
+        import sys
+        import os
+        
+        if getattr(sys, 'frozen', False):
+            node_exe = os.path.join(sys._MEIPASS, 'node.exe')
+        else:
+            node_exe = 'node'
+
         # Absolute path to the app.js script
         script_path = str(Path(__file__).parent.parent / "public" / "server" / "app.js")
 
@@ -40,7 +48,7 @@ class Node:
         )
 
         self.server_process = subprocess.Popen(
-            ["node", script_path],
+            [node_exe, script_path],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             text=True,
