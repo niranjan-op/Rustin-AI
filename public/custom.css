@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@300;400&display=swap');
+
 /* ========================================
    Project Dropdown Button — fixed, tracks sidebar
    ======================================== */
@@ -367,12 +369,12 @@ textarea.pm-input {
 }
 
 /* ========================================
-   FORCE CHAINLIT THEME OVERRIDES (BLACK & BLUE)
+   CHAINLIT THEME OVERRIDES
    ======================================== */
 
-/* Override CSS Variables for both MUI and Tailwind modes */
-:root, .dark, body {
-  --primary: 217 91% 60% !important; /* Blue-500 */
+/* Override CSS Variables for Dark Mode */
+html[data-theme="dark"], .dark {
+  --primary: 0 0% 100% !important; /* White */
   --primary-foreground: 0 0% 100% !important;
   --background: 0 0% 0% !important; /* Absolute Black */
   --card: 0 0% 2% !important;
@@ -392,33 +394,229 @@ textarea.pm-input {
   --mui-palette-background-paper: #050505 !important;
 }
 
-/* Force absolute black backgrounds */
-body, #root, main, .bg-background {
+/* Override CSS Variables for Light Mode */
+html[data-theme="light"], :root:not(.dark) {
+  --primary: 0 0% 0% !important; /* Black */
+  --primary-foreground: 0 0% 100% !important;
+  --background: 0 0% 100% !important; /* Absolute White */
+  --card: 0 0% 98% !important;
+  --popover: 0 0% 98% !important;
+  --muted: 0 0% 96% !important;
+  
+  /* Legacy Chainlit / MUI variables */
+  --cl-primary-main: #3B82F6 !important;
+  --cl-primary-dark: #2563EB !important;
+  --cl-primary-light: #60A5FA !important;
+  --cl-background: #ffffff !important;
+  --cl-paper: #f9fafb !important;
+  
+  /* MUI palette mapping if exposed */
+  --mui-palette-primary-main: #3B82F6 !important;
+  --mui-palette-background-default: #ffffff !important;
+  --mui-palette-background-paper: #f9fafb !important;
+}
+
+/* Absolute backgrounds based on theme */
+html[data-theme="dark"] body, html[data-theme="dark"] #root, html[data-theme="dark"] main, html[data-theme="dark"] .bg-background,
+.dark body, .dark #root, .dark main, .dark .bg-background {
   background-color: #000000 !important;
 }
 
-/* Force sidebars, modals, message inputs to a slightly lighter grey for visibility */
-.bg-card, .bg-muted, .bg-popover, aside, [data-sidebar], .MuiPaper-root {
+html[data-theme="light"] body, html[data-theme="light"] #root, html[data-theme="light"] main, html[data-theme="light"] .bg-background,
+:root:not(.dark) body, :root:not(.dark) #root, :root:not(.dark) main, :root:not(.dark) .bg-background {
+  background-color: #ffffff !important;
+}
+
+/* Sidebars, modals, message inputs based on theme */
+html[data-theme="dark"] .bg-card, html[data-theme="dark"] .bg-muted, html[data-theme="dark"] .bg-popover, html[data-theme="dark"] aside, html[data-theme="dark"] [data-sidebar], html[data-theme="dark"] .MuiPaper-root,
+.dark .bg-card, .dark .bg-muted, .dark .bg-popover, .dark aside, .dark [data-sidebar], .dark .MuiPaper-root {
   background-color: #161616 !important;
 }
 
-/* Explicitly target the chat message input composer so it is completely visible against the black background */
-#chat-input, .message-composer, .cl-message-composer, #message-composer, textarea, .MuiInputBase-root {
+html[data-theme="light"] .bg-card, html[data-theme="light"] .bg-muted, html[data-theme="light"] .bg-popover, html[data-theme="light"] aside, html[data-theme="light"] [data-sidebar], html[data-theme="light"] .MuiPaper-root,
+:root:not(.dark) .bg-card, :root:not(.dark) .bg-muted, :root:not(.dark) .bg-popover, :root:not(.dark) aside, :root:not(.dark) [data-sidebar], :root:not(.dark) .MuiPaper-root {
+  background-color: #f9fafb !important;
+}
+
+/* Chat message input composer based on theme */
+html[data-theme="dark"] #chat-input, html[data-theme="dark"] .message-composer, html[data-theme="dark"] .cl-message-composer, html[data-theme="dark"] #message-composer, html[data-theme="dark"] textarea, html[data-theme="dark"] .MuiInputBase-root,
+.dark #chat-input, .dark .message-composer, .dark .cl-message-composer, .dark #message-composer, .dark textarea, .dark .MuiInputBase-root {
   background-color: #262626 !important;
   color: #ffffff !important;
 }
 
-/* Force any pink/red/coral elements (like the send button, avatar, notification badges) to blue */
+html[data-theme="light"] #chat-input, html[data-theme="light"] .message-composer, html[data-theme="light"] .cl-message-composer, html[data-theme="light"] #message-composer, html[data-theme="light"] textarea, html[data-theme="light"] .MuiInputBase-root,
+:root:not(.dark) #chat-input, :root:not(.dark) .message-composer, :root:not(.dark) .cl-message-composer, :root:not(.dark) #message-composer, :root:not(.dark) textarea, :root:not(.dark) .MuiInputBase-root {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  border: 1px solid #e5e7eb !important;
+}
+
+/* Force primary color for specific elements (Both themes) */
 .bg-primary, .text-primary, .MuiAvatar-root, .MuiButton-containedPrimary, .MuiFab-primary, .MuiIconButton-colorPrimary, [class*="bg-rose-"], [class*="bg-red-"] {
-  background-color: #3B82F6 !important;
-  color: #ffffff !important;
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  border: 1px solid rgba(0,0,0,0.1);
 }
 
 /* Specifically target the Chainlit send message button and user avatar */
 button[id*="send"], button[class*="SendButton"], div[class*="Avatar"] {
-  background-color: #3B82F6 !important;
-  color: #ffffff !important;
+  background-color: #ffffff !important;
+  color: #000000 !important;
 }
+
+/* Global styling and border fixes (removes red borders) */
+form button, .MuiButton-outlined, [class*="login"] button, .MuiButton-root, .MuiButtonBase-root, button[class*="border-red"] {
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+html[data-theme="light"] form button, html[data-theme="light"] .MuiButton-outlined, html[data-theme="light"] .MuiButton-root, html[data-theme="light"] .MuiButtonBase-root, html[data-theme="light"] button[class*="border-red"] {
+  border-color: rgba(0, 0, 0, 0.3) !important;
+}
+
+#login-brand {
+  position: absolute;
+  top: 40px;
+  left: 40px;
+  font-size: 48px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.04em;
+  z-index: 50;
+  font-family: inherit;
+}
+html[data-theme="light"] #login-brand, :root:not(.dark) #login-brand {
+  color: #000000;
+}
+
+/* ========================================
+   LIGHT MODE OVERRIDES FOR CUSTOM COMPONENTS
+   ======================================== */
+
+html[data-theme="light"] #project-dropdown-btn,
+:root:not(.dark) #project-dropdown-btn {
+  color: rgba(0, 0, 0, 0.85);
+}
+
+html[data-theme="light"] #project-dropdown-btn:hover,
+:root:not(.dark) #project-dropdown-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+html[data-theme="light"] #project-modal,
+:root:not(.dark) #project-modal {
+  background: #ffffff;
+  color: rgba(0, 0, 0, 0.9);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.05);
+}
+
+html[data-theme="light"] .pm-header h2,
+:root:not(.dark) .pm-header h2 {
+  color: #000;
+}
+
+html[data-theme="light"] .pm-close-btn,
+:root:not(.dark) .pm-close-btn {
+  color: rgba(0,0,0,0.5);
+}
+
+html[data-theme="light"] .pm-close-btn:hover,
+:root:not(.dark) .pm-close-btn:hover {
+  color: #000;
+  background: rgba(0,0,0,0.1);
+}
+
+html[data-theme="light"] .pm-action-btn,
+:root:not(.dark) .pm-action-btn {
+  background: rgba(0,0,0,0.03);
+  border-color: rgba(0,0,0,0.08);
+  color: rgba(0,0,0,0.85);
+}
+
+html[data-theme="light"] .pm-action-btn:hover,
+:root:not(.dark) .pm-action-btn:hover {
+  background: rgba(0,0,0,0.08);
+  border-color: rgba(0,0,0,0.15);
+}
+
+html[data-theme="light"] .pm-section-label,
+:root:not(.dark) .pm-section-label {
+  color: rgba(0,0,0,0.45);
+}
+
+html[data-theme="light"] .pm-project-card,
+:root:not(.dark) .pm-project-card {
+  background: rgba(0,0,0,0.02);
+  border-color: rgba(0,0,0,0.06);
+  color: rgba(0,0,0,0.85);
+}
+
+html[data-theme="light"] .pm-project-card:hover,
+:root:not(.dark) .pm-project-card:hover {
+  background: rgba(0,0,0,0.05);
+  border-color: rgba(0,0,0,0.12);
+}
+
+html[data-theme="light"] .pm-project-card.active,
+:root:not(.dark) .pm-project-card.active {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.4);
+}
+
+html[data-theme="light"] .pm-card-icon,
+:root:not(.dark) .pm-card-icon {
+  color: rgba(0,0,0,0.4);
+}
+
+html[data-theme="light"] .pm-project-card.active .pm-card-icon,
+:root:not(.dark) .pm-project-card.active .pm-card-icon {
+  color: #3B82F6;
+}
+
+html[data-theme="light"] .pm-card-name,
+:root:not(.dark) .pm-card-name {
+  color: #000;
+}
+
+html[data-theme="light"] .pm-card-path,
+:root:not(.dark) .pm-card-path {
+  color: rgba(0,0,0,0.5);
+}
+
+html[data-theme="light"] .pm-card-delete,
+:root:not(.dark) .pm-card-delete {
+  color: rgba(0,0,0,0.3);
+}
+
+html[data-theme="light"] .pm-form-group label,
+:root:not(.dark) .pm-form-group label {
+  color: rgba(0,0,0,0.7);
+}
+
+html[data-theme="light"] .pm-input,
+:root:not(.dark) .pm-input {
+  background: #ffffff;
+  border-color: rgba(0,0,0,0.15);
+  color: #000;
+}
+
+html[data-theme="light"] .pm-input::placeholder,
+:root:not(.dark) .pm-input::placeholder {
+  color: rgba(0,0,0,0.4);
+}
+
+html[data-theme="light"] .pm-btn-secondary,
+:root:not(.dark) .pm-btn-secondary {
+  border-color: rgba(0,0,0,0.15);
+  color: rgba(0,0,0,0.7);
+}
+
+html[data-theme="light"] .pm-btn-secondary:hover,
+:root:not(.dark) .pm-btn-secondary:hover {
+  background: rgba(0,0,0,0.05);
+  color: #000;
+}
+
 
 /* ========================================
    Agent Execution Animations
@@ -460,3 +658,224 @@ button[id*="send"], button[class*="SendButton"], div[class*="Avatar"] {
   transition: all 0.3s ease;
 }
 
+/* ========================================
+   LOGIN PAGE CUSTOM STYLES
+   ======================================== */
+
+/* General Login Button Styling */
+body.is-login-page button.MuiButton-outlined,
+body.is-login-page form button[type="submit"],
+body.is-login-page [class*="login"] button {
+  background-color: #ffffff !important;
+  border-color: rgba(0, 0, 0, 0.3) !important;
+  color: #000000 !important;
+  font-weight: 600;
+  border-radius: 8px;
+}
+
+html[data-theme="light"] body.is-login-page button.MuiButton-outlined,
+html[data-theme="light"] body.is-login-page form button[type="submit"],
+html[data-theme="light"] body.is-login-page [class*="login"] button,
+:root:not(.dark) body.is-login-page button.MuiButton-outlined,
+:root:not(.dark) body.is-login-page form button[type="submit"],
+:root:not(.dark) body.is-login-page [class*="login"] button {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+  border-color: #000000 !important;
+}
+
+html[data-theme="light"] body.is-login-page form button[type="submit"]:hover,
+:root:not(.dark) body.is-login-page form button[type="submit"]:hover {
+  background-color: #333333 !important;
+}
+
+/* General Login Input Styling */
+body.is-login-page input,
+body.is-login-page .MuiInputBase-root,
+body.is-login-page .MuiOutlinedInput-notchedOutline {
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  color: #ffffff !important;
+  background-color: transparent !important;
+}
+
+body.is-login-page input:focus,
+body.is-login-page .MuiInputBase-root.Mui-focused,
+body.is-login-page .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+  border-color: #ffffff !important;
+  box-shadow: 0 0 0 1px #ffffff !important;
+}
+
+html[data-theme="light"] body.is-login-page input,
+html[data-theme="light"] body.is-login-page .MuiInputBase-root,
+html[data-theme="light"] body.is-login-page .MuiOutlinedInput-notchedOutline,
+:root:not(.dark) body.is-login-page input,
+:root:not(.dark) body.is-login-page .MuiInputBase-root,
+:root:not(.dark) body.is-login-page .MuiOutlinedInput-notchedOutline {
+  border-color: rgba(0, 0, 0, 0.3) !important;
+  color: #000000 !important;
+  background-color: transparent !important;
+}
+
+html[data-theme="light"] body.is-login-page input:focus,
+html[data-theme="light"] body.is-login-page .MuiInputBase-root.Mui-focused,
+html[data-theme="light"] body.is-login-page .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline,
+:root:not(.dark) body.is-login-page input:focus,
+:root:not(.dark) body.is-login-page .MuiInputBase-root.Mui-focused,
+:root:not(.dark) body.is-login-page .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+  border-color: #000000 !important;
+  box-shadow: 0 0 0 1px #000000 !important;
+}
+
+/* Remove any error/red borders globally on login page */
+body.is-login-page [class*="border-red"],
+body.is-login-page .Mui-error .MuiOutlinedInput-notchedOutline {
+  border-color: inherit !important;
+}
+
+/* Hide Chainlit top-left logo specifically on login page */
+body.is-login-page img[src*="logo"]:not(#login-logo-img),
+body.is-login-page a[href="/"] > img,
+body.is-login-page .MuiToolbar-root img {
+  display: none !important;
+}
+
+/* Custom Login Header */
+#custom-login-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 32px;
+}
+
+#custom-login-header img {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+  margin-bottom: 16px;
+}
+
+#custom-login-header h1 {
+  font-size: 36px;
+  font-weight: 800;
+  margin: 0;
+  color: #ffffff !important;
+  letter-spacing: -0.02em;
+}
+
+html[data-theme="light"] #custom-login-header h1,
+:root:not(.dark) #custom-login-header h1 {
+  color: #000000 !important;
+}
+
+/* ========================================
+   SMOOTH DARK/LIGHT MODE TRANSITION
+   ======================================== */
+body, #root, main, .bg-background, .bg-card, .bg-muted, .bg-popover, .MuiPaper-root, aside, [data-sidebar], #chat-input, .message-composer, textarea, .MuiInputBase-root, form, input {
+  transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease !important;
+}
+
+/* ========================================
+   WELCOME MESSAGE STYLES
+   ======================================== */
+
+#custom-welcome-msg {
+  pointer-events: none;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+  margin-bottom: 20px;
+}
+
+#custom-welcome-text {
+  font-family: 'Oswald', 'Inter', sans-serif;
+  font-weight: 300;
+  font-size: 32px;
+  letter-spacing: 0.05em;
+  color: #ffffff;
+  min-height: 48px;
+}
+
+html[data-theme="light"] #custom-welcome-text,
+:root:not(.dark) #custom-welcome-text {
+  color: #000000;
+}
+
+#custom-welcome-text::after {
+  content: '|';
+  margin-left: 4px;
+  opacity: 1;
+  animation: blink 1s step-end infinite;
+}
+
+#custom-welcome-text.stop-blinking::after {
+  display: none;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* ========================================
+   GENERATING STATE ANIMATIONS
+   ======================================== */
+
+body.is-generating {
+  /* Subtle dark/light glow on the background */
+  animation: bg-pulse 3s infinite alternate;
+}
+
+@keyframes bg-pulse {
+  0% { background-color: var(--cl-background, #121212); }
+  100% { background-color: rgba(59, 130, 246, 0.05); } 
+}
+
+html[data-theme="light"] body.is-generating,
+:root:not(.dark) body.is-generating {
+  animation: bg-pulse-light 3s infinite alternate;
+}
+
+@keyframes bg-pulse-light {
+  0% { background-color: #ffffff; }
+  100% { background-color: rgba(59, 130, 246, 0.08); } 
+}
+
+/* Animate the message composer border while generating */
+body.is-generating #chat-input,
+body.is-generating .message-composer {
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.15) !important;
+  border-color: rgba(59, 130, 246, 0.5) !important;
+  animation: composer-glow 2s infinite alternate;
+}
+
+@keyframes composer-glow {
+  0% { box-shadow: 0 0 10px rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.3); }
+  100% { box-shadow: 0 0 25px rgba(59, 130, 246, 0.4); border-color: rgba(59, 130, 246, 0.8); }
+}
+
+/* Pulse the assistant's avatar while generating (only the last message) */
+@keyframes avatar-pulse {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+  50% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+}
+
+body.is-generating .cl-message:last-of-type .cl-avatar,
+body.is-generating .cl-message:last-of-type .MuiAvatar-root {
+  animation: avatar-pulse 2s infinite;
+}
+
+/* Make the Stop button look premium and noticeable */
+#stop-button {
+  background-color: rgba(239, 68, 68, 0.1) !important;
+  color: #ef4444 !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+  border-radius: 8px !important;
+  transition: all 0.3s ease !important;
+}
+
+#stop-button:hover {
+  background-color: rgba(239, 68, 68, 0.2) !important;
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.4) !important;
+}

@@ -1,7 +1,10 @@
+import ollama
 from langchain_core.tools import tool
 
-from services.git_manager import GitManager
 from core.memory import query_long_term_memory
+
+# from core.models import orchestrator_project_llm
+from services.git_manager import GitManager
 
 
 # @tool
@@ -79,6 +82,7 @@ def _update_active_project_path():
     import urllib.parse
 
     from chainlit.context import get_context
+
     from sandbox import node_sandbox as sandbox_node
 
     project_path = None
@@ -133,6 +137,17 @@ def stop_node_server() -> str:
 
     sandbox_node.node_instance.shutdown()
     return "Node server stopped successfully."
+
+
+# @tool
+# def thinking(tasks: str) -> str:
+#     """
+#     Provide a complete detailed list of tasks to be implemented
+#     which need to be planned before implementation. This tool will help you to think and plan the next step.
+
+#     Input format: tasks : str
+#     """
+#     return ""
 
 
 @tool

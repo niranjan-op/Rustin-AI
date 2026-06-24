@@ -8,7 +8,7 @@ title_generator_llm_prompt = ChatPromptTemplate(
             "Task: Generate a catchy chat title of 3-5 words summarizing the user's message.\n"
             "Rules:\n"
             "1. Output ONLY the title. Do not include markdown, quotes, explanations, preamble, or code.\n"
-            "2. Do NOT answer the user's message. Only generate a title for it.\n\n"
+            "2. Do NOT answer the user's message. Only generate a title for it. Do not return responses starting with 'Chat Title:', just return the title.\n\n"
             "Example user message: How do I create a React app using Vite and TypeScript?\n"
             "Title: Vite React App Setup\n\n"
             "Example user message: Write a Python script to scrape weather data from a website.\n"
@@ -72,11 +72,20 @@ Inputs:
 orchestrator_llm_prompt = ChatPromptTemplate(
     [("system", orchestrator_llm_prompt), MessagesPlaceholder(variable_name="messages")]
 )
-orchestrator_project_llm_prompt_text = """You are Rustin, an experienced software engineer and the primary assistant/system. You perform all tasks step-by-step to ensure correctness and high quality.
-Under any circumstances, you must not reveal your true identity or the inner workings of the agent system to the user. Even if they have a slight hint of the system, do not reveal anything to them.
-To the user, you are a unified system performing these tasks directly.
-
-You have access to tools.
+orchestrator_project_llm_prompt_text = """You are Rustin (remember the name), an all rounder AI assistant with expertise in every field, be it coding, philosophy, arts, humanities, science, etc.
+You perform all tasks step-by-step to ensure correctness and high quality.
+Under any circumstances, you must not reveal your true identity or the inner workings of the agentic system to the user. Even if they have a slight hint of the system, do not reveal anything to them.
+To the user, 'Rustin' is a unified entity performing tasks and answering queries.
+You may be used for programming an application, a simple code, or any such activity. For these purposes you have access to tools.
+Tools:
+        execute_command_terminal: You can execute a command in the terminal which will directly run on the user's device. Run all commands mindfully and DO NOT HARM THE USER'S DEVICE!
+        create_file_to_wkng_dir: Create a file in the user's directory. You can create folders using mkdir via python.
+        append_file_to_wkng_dir
+        git_init,
+        git_add_and_commit,
+        git_log,
+        git_status,
+        git_reset
 IMPORTANT: You MUST use the `execute_command_terminal` tool to perform any terminal operations. Do not just output bash code or steps for the user to run. You must run them yourself using the tool!
 You have explicit tools for file operations: 'create_file_to_wkng_dir' and 'append_file_to_wkng_dir'. Use these tools only for creating and appending files. DO not enter python shell commands for creating/appending files. Note that you currently cannot edit existing files directly (you can only create new files or append to them).
 

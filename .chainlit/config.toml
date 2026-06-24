@@ -125,14 +125,14 @@ cot = "tool_call"
 
 # Specify a CSS file that can be used to customize the user interface.
 # The CSS file can be served from the public directory or via an external link.
-custom_css = "/public/custom.css?v=3"
+custom_css = "/public/custom.css?v=19"
 
 # Specify additional attributes for a custom CSS file
 # custom_css_attributes = "media=\"print\""
 
 # Specify a JavaScript file that can be used to customize the user interface.
 # The JavaScript file can be served from the public directory.
-custom_js = "/public/custom.js?v=2"
+custom_js = "/public/custom.js?v=21"
 
 # The style of alert boxes. Can be "classic" or "modern".
 alert_style = "modern"
@@ -141,7 +141,7 @@ alert_style = "modern"
 # custom_js_attributes = "async type = \"module\""
 
 # Custom login page image, relative to public directory or external URL
-# login_page_image = "/public/custom-background.jpg"
+login_page_image = "/public/login_bg.png"
 
 # Custom login page image filter (Tailwind internal filters, no dark/light variants)
 # login_page_image_filter = "brightness-50 grayscale"
@@ -154,7 +154,7 @@ alert_style = "modern"
 # custom_meta_image_url = "https://chainlit-cloud.s3.eu-west-3.amazonaws.com/logo/chainlit_banner.png"
 
 # Load assistant logo directly from URL.
-logo_file_url = "/public/logo_dark.png?v=5"
+logo_file_url = "/public/logo_dark.png?v=19"
 
 # Load assistant avatar image directly from URL.
 default_avatar_file_url = ""
@@ -186,17 +186,17 @@ default = "dark"
     paper = "#161616"
 
 [UI.theme.dark.primary]
-    main = "#3B82F6"
-    dark = "#2563EB"
-    light = "#60A5FA"
+    main = "#FFFFFF"
+    dark = "#E5E7EB"
+    light = "#F9FAFB"
 
 [UI.theme.light]
-    background = "#000000"
-    paper = "#161616"
+    background = "#FFFFFF"
+    paper = "#F9FAFB"
 
 [UI.theme.light.primary]
-    main = "#3B82F6"
-    dark = "#2563EB"
-    light = "#60A5FA"
+    main = "#111827"
+    dark = "#000000"
+    light = "#374151"
 
 

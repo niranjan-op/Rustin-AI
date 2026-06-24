@@ -556,16 +556,199 @@
   // Boot
   // =============================================
   function boot() {
-    createButton();
+    // Initial check
+    if (!window.location.pathname.startsWith("/login")) {
+      createButton();
+    }
 
-    // Watch for React re-renders removing our button
+    // Watch for React re-renders or navigation
     const mo = new MutationObserver(() => {
-      if (!document.getElementById("project-dropdown-btn")) {
-        btn = null;
-        createButton();
+      const isLogin = window.location.pathname.startsWith("/login");
+      const btnExists = document.getElementById("project-dropdown-btn");
+      
+      if (isLogin) {
+        document.body.classList.add("is-login-page");
+        if (btnExists) {
+          btnExists.remove();
+          btn = null;
+        }
+
+        // --- Login Page DOM Overrides ---
+        // 1. Replace "Login to access the app" and insert custom branding
+        const textElements = document.querySelectorAll("p, h1, h2, h3, h4, h5, span, div");
+        textElements.forEach(el => {
+          // Check direct child text to avoid overwriting nested HTML
+          if (el.childNodes.length === 1 && el.childNodes[0].nodeType === Node.TEXT_NODE) {
+             const text = el.textContent.trim().toLowerCase();
+             if (text.includes("login to access the app") || text === "login") {
+                el.style.display = "none";
+             }
+          }
+        });
+
+        const form = document.querySelector("form");
+        if (form && !document.getElementById("custom-login-header")) {
+          const header = document.createElement("div");
+          header.id = "custom-login-header";
+          header.innerHTML = `
+            <img id="login-logo-img" src="/public/logo_dark.png" alt="Rustin AI Logo" />
+            <h1>Rustin AI.</h1>
+          `;
+          form.parentElement.insertBefore(header, form);
+        }
+      } else {
+        document.body.classList.remove("is-login-page");
+        if (!btnExists) {
+          btn = null;
+          createButton();
+        }
+
+        // --- Fetch Loading Phrases once ---
+        if (!window.loadingPhrases) {
+          window.loadingPhrases = ["Thinking...", "Analysing...", "Processing..."];
+          fetch('/public/loading.txt')
+            .then(res => res.text())
+            .then(text => {
+               const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+               if(lines.length > 0) window.loadingPhrases = lines;
+            }).catch(e => console.error("Could not load loading.txt", e));
+        }
+
+        // --- Home Screen Welcome Message ---
+        if (!document.getElementById("custom-welcome-msg")) {
+          // Check: no chat messages on screen (home/welcome screen)
+          const hasMessages = document.querySelectorAll('[class*="message"]').length > 3;
+          
+          // Find the main textarea (the message composer)
+          const textarea = document.querySelector('textarea[placeholder*="message"], textarea[placeholder*="Message"], textarea');
+          
+          // Find the logo image on the welcome screen
+          const logoImg = document.querySelector('img[src*="logo"]');
+          
+          if (!hasMessages && textarea && logoImg) {
+             const welcomeContainer = document.createElement("div");
+             welcomeContainer.id = "custom-welcome-msg";
+             
+             const welcomeText = document.createElement("div");
+             welcomeText.id = "custom-welcome-text";
+             welcomeContainer.appendChild(welcomeText);
+             
+             // Strategy: insert exactly after the logo image
+             // This guarantees it is below the logo and above the message box
+             if (logoImg) {
+               // Insert right after the logo
+               logoImg.insertAdjacentElement('afterend', welcomeContainer);
+             } else {
+               // Fallback just in case
+               const composerContainer = textarea.closest('form');
+               if (composerContainer && composerContainer.parentElement) {
+                 composerContainer.parentElement.insertBefore(welcomeContainer, composerContainer);
+               }
+             }
+             
+             // Fetch and type the welcome text
+             fetch('/public/welcome.txt')
+                .then(res => res.text())
+                .then(text => {
+                  const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+                  if (lines.length > 0) {
+                    const randomLine = lines[Math.floor(Math.random() * lines.length)];
+                    
+                    // Typing animation
+                    welcomeText.textContent = "";
+                    let i = 0;
+                    const speed = 40; // ms per char
+                    function typeChar() {
+                      if (i < randomLine.length) {
+                        welcomeText.textContent += randomLine.charAt(i);
+                        i++;
+                        setTimeout(typeChar, speed);
+                      }
+                    }
+                    typeChar();
+                    
+                    // Stop cursor blinking after ~8 seconds
+                    setTimeout(() => {
+                      welcomeText.classList.add("stop-blinking");
+                    }, 8000);
+                  }
+                })
+                .catch(err => console.error("Could not load welcome.txt", err));
+          }
+        }
+      }
+
+      // Handle Theme-based Logo Switching
+      const isLight = document.documentElement.getAttribute('data-theme') === 'light' || (!document.documentElement.classList.contains('dark') && document.documentElement.getAttribute('data-theme') !== 'dark');
+      
+      const logos = document.querySelectorAll('img[src*="logo_light.png"], img[src*="logo_dark.png"]');
+      logos.forEach(img => {
+        if (isLight && img.src.includes('logo_dark.png')) {
+          img.src = img.src.replace('logo_dark.png', 'logo_light.png');
+        } else if (!isLight && img.src.includes('logo_light.png')) {
+          img.src = img.src.replace('logo_light.png', 'logo_dark.png');
+        }
+      });
+
+      // --- Detect Generating State & Inject Loading Animation ---
+      // Detect the stop button: it contains a filled <rect> SVG (square icon) inside the composer
+      const composerArea = document.querySelector('textarea')?.closest('form') || document.querySelector('textarea')?.closest('div[class]');
+      const hasStopBtn = composerArea 
+        ? Array.from(composerArea.querySelectorAll('button')).some(btn => btn.querySelector('rect') !== null)
+        : false;
+
+      if (hasStopBtn) {
+        document.body.classList.add("is-generating");
+        if (!document.getElementById("custom-loading-anim") && window.loadingPhrases) {
+          const loader = document.createElement("div");
+          loader.id = "custom-loading-anim";
+          const textarea = document.querySelector('textarea');
+          const composerEl = textarea?.closest('form') || textarea?.closest('div');
+          const composerRect = composerEl ? composerEl.getBoundingClientRect() : null;
+          const topPos = composerRect ? (composerRect.top - 30) : 100;
+          loader.style.cssText = `
+            position: fixed;
+            top: ${topPos}px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Oswald', 'Inter', sans-serif;
+            font-weight: 300;
+            font-size: 17px;
+            letter-spacing: 0.06em;
+            color: ${isLight ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.45)'};
+            pointer-events: none;
+            z-index: 9999;
+            transition: opacity 0.4s ease;
+            white-space: nowrap;
+          `;
+          document.body.appendChild(loader);
+          let phraseIndex = Math.floor(Math.random() * window.loadingPhrases.length);
+          let dotCount = 1;
+          const updateText = () => {
+            const el = document.getElementById("custom-loading-anim");
+            if (!el) return;
+            el.textContent = window.loadingPhrases[phraseIndex] + '.'.repeat(dotCount);
+          };
+          updateText();
+          if (window.dotInterval) clearInterval(window.dotInterval);
+          window.dotInterval = setInterval(() => { dotCount = dotCount >= 3 ? 1 : dotCount + 1; updateText(); }, 400);
+          if (window.loadingInterval) clearInterval(window.loadingInterval);
+          window.loadingInterval = setInterval(() => {
+            const el = document.getElementById("custom-loading-anim");
+            if (!el) { clearInterval(window.loadingInterval); return; }
+            el.style.opacity = "0";
+            setTimeout(() => { phraseIndex = (phraseIndex + 1) % window.loadingPhrases.length; dotCount = 1; updateText(); el.style.opacity = "1"; }, 400);
+          }, 2500);
+        }
+      } else {
+        document.body.classList.remove("is-generating");
+        const loader = document.getElementById("custom-loading-anim");
+        if (loader) loader.remove();
+        if (window.loadingInterval) { clearInterval(window.loadingInterval); window.loadingInterval = null; }
+        if (window.dotInterval) { clearInterval(window.dotInterval); window.dotInterval = null; }
       }
     });
-    mo.observe(document.body, { childList: true, subtree: true });
+    mo.observe(document.body, { childList: true, subtree: true, characterData: true });
   }
 
   if (document.readyState === "loading") {
