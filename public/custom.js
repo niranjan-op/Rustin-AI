@@ -225,7 +225,7 @@
     if (document.getElementById("persistent-brand")) return;
     const brand = document.createElement("div");
     brand.id = "persistent-brand";
-    brand.innerHTML = `<img src="/public/logo_dark.png" class="brand-logo" alt="Logo" /> <span>Rustin AI.</span>`;
+    brand.innerHTML = `<img src="/public/no_background_white.png" class="brand-logo" alt="Logo" /> <span>Rustin AI.</span>`;
     document.body.appendChild(brand);
   }
 
@@ -613,7 +613,7 @@
           const header = document.createElement("div");
           header.id = "custom-login-header";
           header.innerHTML = `
-            <img id="login-logo-img" src="/public/logo_dark.png" alt="Rustin AI Logo" />
+            <img id="login-logo-img" src="/public/no_background_white.png" alt="Rustin AI Logo" />
             <h1>Rustin AI.</h1>
           `;
           form.parentElement.insertBefore(header, form);
@@ -646,7 +646,7 @@
           const textarea = document.querySelector('textarea[placeholder*="message"], textarea[placeholder*="Message"], textarea');
           
           // Find the logo image on the welcome screen (ignoring header logos)
-          const logoImg = document.querySelector('img[src*="logo"]:not(.brand-logo):not(#login-logo-img)');
+          const logoImg = document.querySelector('img[src*="no_background"]:not(.brand-logo):not(#login-logo-img)');
           
           if (!hasMessages && textarea && logoImg) {
              const welcomeContainer = document.createElement("div");
@@ -677,23 +677,60 @@
                   if (lines.length > 0) {
                     const randomLine = lines[Math.floor(Math.random() * lines.length)];
                     
-                    // Typing animation
-                    welcomeText.textContent = "";
-                    let i = 0;
-                    const speed = 40; // ms per char
-                    function typeChar() {
-                      if (i < randomLine.length) {
-                        welcomeText.textContent += randomLine.charAt(i);
-                        i++;
-                        setTimeout(typeChar, speed);
+                    let typeTimeout;
+                    let isTyping = false;
+                    let listeningInterval;
+                    let stopTypingTimer;
+
+                    function playWelcomeAnimation() {
+                      welcomeText.textContent = "";
+                      welcomeText.classList.remove("stop-blinking");
+                      let i = 0;
+                      const speed = 40;
+                      function typeChar() {
+                        if (i < randomLine.length) {
+                          welcomeText.textContent += randomLine.charAt(i);
+                          i++;
+                          typeTimeout = setTimeout(typeChar, speed);
+                        } else {
+                          typeTimeout = setTimeout(() => { welcomeText.classList.add("stop-blinking"); }, 8000);
+                        }
                       }
+                      typeChar();
                     }
-                    typeChar();
-                    
-                    // Stop cursor blinking after ~8 seconds
-                    setTimeout(() => {
-                      welcomeText.classList.add("stop-blinking");
-                    }, 8000);
+
+                    playWelcomeAnimation();
+
+                    function startListeningAnimation() {
+                      if (isTyping) return;
+                      isTyping = true;
+                      clearTimeout(typeTimeout);
+                      welcomeText.classList.remove("stop-blinking");
+                      
+                      let dots = 0;
+                      welcomeText.textContent = "Listening";
+                      listeningInterval = setInterval(() => {
+                        dots = (dots + 1) % 4;
+                        welcomeText.textContent = "Listening" + ".".repeat(dots);
+                      }, 400);
+                    }
+
+                    function stopListeningAnimation() {
+                      if (!isTyping) return;
+                      isTyping = false;
+                      clearInterval(listeningInterval);
+                      playWelcomeAnimation();
+                    }
+
+                    if (textarea) {
+                      textarea.addEventListener('input', () => {
+                        startListeningAnimation();
+                        clearTimeout(stopTypingTimer);
+                        stopTypingTimer = setTimeout(() => {
+                          stopListeningAnimation();
+                        }, 1500); // Stop listening animation after 1.5s of no typing
+                      });
+                    }
                   }
                 })
                 .catch(err => console.error("Could not load welcome.txt", err));
@@ -704,12 +741,12 @@
       // Handle Theme-based Logo Switching
       const isLight = document.documentElement.getAttribute('data-theme') === 'light' || (!document.documentElement.classList.contains('dark') && document.documentElement.getAttribute('data-theme') !== 'dark');
       
-      const logos = document.querySelectorAll('img[src*="logo_light.png"], img[src*="logo_dark.png"]');
+      const logos = document.querySelectorAll('img[src*="no_background_black.png"], img[src*="no_background_white.png"]');
       logos.forEach(img => {
-        if (isLight && img.src.includes('logo_dark.png')) {
-          img.src = img.src.replace('logo_dark.png', 'logo_light.png');
-        } else if (!isLight && img.src.includes('logo_light.png')) {
-          img.src = img.src.replace('logo_light.png', 'logo_dark.png');
+        if (isLight && img.src.includes('no_background_white.png')) {
+          img.src = img.src.replace('no_background_white.png', 'no_background_black.png');
+        } else if (!isLight && img.src.includes('no_background_black.png')) {
+          img.src = img.src.replace('no_background_black.png', 'no_background_white.png');
         }
       });
 

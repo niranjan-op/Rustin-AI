@@ -58,7 +58,8 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  pointer-events: none;
+  pointer-events: auto; /* Allow hover on the whole brand area */
+  cursor: pointer;      /* Show pointer to indicate it's interactive */
   transition: left 0.15s ease;
 }
 
@@ -66,6 +67,29 @@
   width: 28px;
   height: 28px;
   object-fit: contain;
+}
+
+/* Global hover effect for all logos anywhere in the app */
+img[src*="no_background_white"], 
+img[src*="no_background_black"] {
+  transition: filter 0.3s ease, transform 0.3s ease;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+img[src*="no_background_white"]:hover, 
+img[src*="no_background_black"]:hover {
+  transform: translateY(-2px) scale(1.05);
+}
+
+/* Dark mode / white logo halo */
+img[src*="no_background_white"]:hover {
+  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.8));
+}
+
+/* Light mode / black logo halo */
+img[src*="no_background_black"]:hover {
+  filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.8));
 }
 
 #persistent-brand span {

@@ -125,14 +125,14 @@ cot = "tool_call"
 
 # Specify a CSS file that can be used to customize the user interface.
 # The CSS file can be served from the public directory or via an external link.
-custom_css = "/public/custom.css?v=21"
+custom_css = "/public/custom.css?v=25"
 
 # Specify additional attributes for a custom CSS file
 # custom_css_attributes = "media=\"print\""
 
 # Specify a JavaScript file that can be used to customize the user interface.
 # The JavaScript file can be served from the public directory.
-custom_js = "/public/custom.js?v=25"
+custom_js = "/public/custom.js?v=28"
 
 # The style of alert boxes. Can be "classic" or "modern".
 alert_style = "modern"
@@ -154,7 +154,7 @@ login_page_image = "/public/login_bg.png"
 # custom_meta_image_url = "https://chainlit-cloud.s3.eu-west-3.amazonaws.com/logo/chainlit_banner.png"
 
 # Load assistant logo directly from URL.
-logo_file_url = "/public/logo_dark.png?v=19"
+logo_file_url = "/public/no_background_white.png?v=20"
 
 # Load assistant avatar image directly from URL.
 default_avatar_file_url = ""
