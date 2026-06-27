@@ -20,8 +20,8 @@ base_llm = ChatGoogleGenerativeAI(model="gemini-3.1-flash-lite", temperature=0.5
 #     model="llama3.2:3b", temperature=0.9, base_url="http://127.0.0.1:11434"
 # )
 from tools.coding_tools import (
-    route_to_thinking,
     route_to_coding,
+    route_to_thinking,
 )
 
 orchestrator_read_tools = [
@@ -29,9 +29,15 @@ orchestrator_read_tools = [
 ]
 
 orchestrator_llm = base_llm.bind_tools(non_coding_tools)
-orchestrator_project_llm = base_llm.bind_tools(orchestrator_read_tools + non_coding_tools)
-thinking_llm = base_llm.bind_tools([route_to_coding])
-coding_llm = base_llm.bind_tools(coding_tools)
+orchestrator_project_llm = base_llm.bind_tools(
+    orchestrator_read_tools + non_coding_tools
+)
+thinking_llm = ChatGoogleGenerativeAI(
+    model="gemini-3.1-flash-lite", temperature=0.5
+).bind_tools([route_to_coding])
+coding_llm = ChatGoogleGenerativeAI(
+    model="gemini-3.1-flash-lite", temperature=0.5
+).bind_tools(coding_tools)
 
 fast_llm = ChatOllama(
     model="llama3.2:1b", temperature=0.5, base_url="http://127.0.0.1:11434"

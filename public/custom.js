@@ -670,7 +670,7 @@
              }
              
              // Fetch and type the welcome text with cache-busting
-             fetch('/public/welcome.txt?t=' + new Date().getTime())
+             fetch('/api/welcome?t=' + new Date().getTime(), { credentials: 'include' })
                 .then(res => res.text())
                 .then(text => {
                   const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);

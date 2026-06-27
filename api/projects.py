@@ -7,6 +7,7 @@ from chainlit.auth import get_current_user
 from chainlit.server import app
 from chainlit.user import User
 from fastapi import Depends, HTTPException, Query
+from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, Field
 
 DB_PATH = ".files/test.db"
@@ -39,6 +40,23 @@ async def validate_path(
     normalized_path = os.path.normpath(os.path.expanduser(path))
     exists = os.path.isdir(normalized_path)
     return {"exists": exists}
+
+
+@app.get(r"/api/welcome", response_class=PlainTextResponse)
+async def get_welcome_message(current_user: User | None = Depends(get_current_user)):
+    user_identifier = current_user.identifier if current_user else "1"
+    user_welcome_path = os.path.normpath(os.path.join(os.getcwd(), "public", f"welcome_{user_identifier}.txt"))
+    if os.path.isfile(user_welcome_path):
+        with open(user_welcome_path, "r", encoding="utf-8") as f:
+            return f.read()
+    
+    default_welcome_path = os.path.normpath(os.path.join(os.getcwd(), "public", "welcome.txt"))
+    if os.path.isfile(default_welcome_path):
+        with open(default_welcome_path, "r", encoding="utf-8") as f:
+            return f.read()
+            
+    return "Welcome back. Ready when you are."
+
 
 
 @app.post(r"/api/projects/create-project", response_model=dict)

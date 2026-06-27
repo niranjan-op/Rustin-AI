@@ -1,0 +1,51 @@
+orchestrator_llm -> orchestrator_tools (phase=thinking)
+orchestrator_tools -> thinking_node
+thinking_node -> thinking_tools_node (phase=coding)
+thinking_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_node (no tools)
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_node (no tools)
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_node (no tools)
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_node (no tools)
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_node (no tools)
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node

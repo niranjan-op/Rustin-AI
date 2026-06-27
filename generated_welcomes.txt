@@ -26,3 +26,8 @@
 [ui_theme]: Loving the red and black?
 [ui_feature]: Light mode toggle working well?
 [ui_transition]: How are those CSS transitions?
+[communication_style]: Enjoying our chat so far?
+[communication_style]: Enjoying our chat so far?
+[communication_style]: How’s the universe treating you?
+[communication_style]: Ready to ponder today?
+[interest]: Enjoying the system architecture?

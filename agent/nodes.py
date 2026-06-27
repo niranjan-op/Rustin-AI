@@ -292,8 +292,9 @@ async def generate_welcome_tasks(user_id: str) -> str:
         conn.commit()
         print(f"[WELCOME] Slot {current_index} served. Next index: {next_index}")
 
-        # Write the picked message to public/welcome.txt for the frontend UI animation
-        with open(PUBLIC_WELCOME_TXT_PATH, "w", encoding="utf-8") as f:
+        # Write the picked message to public/welcome_{user_id}.txt for the frontend UI animation
+        user_welcome_path = _os.path.join(_PROJECT_ROOT, "public", f"welcome_{user_id}.txt")
+        with open(user_welcome_path, "w", encoding="utf-8") as f:
             f.write(message)
 
         return message
@@ -638,16 +639,15 @@ async def orchestrator_llm_node(state: AgentState):
 
     if user_profile:
         context_parts.append(f"[USER PROFILE MEMORIES]:\n{user_profile}")
-    if welcome_context:
-        context_parts.append(
-            f'[SESSION OPENER SHOWN TO USER]:\n"{welcome_context}"\nRespond naturally continuing from this opener.'
-        )
-
     profile_msg = (
         [HumanMessage(content="[SYSTEM CONTEXT]\n" + "\n\n".join(context_parts))]
         if context_parts
         else []
     )
+    
+    welcome_msg_list = []
+    if welcome_context:
+        welcome_msg_list = [AIMessage(content=welcome_context)]
 
     # Read terminal_access from Chainlit user session, default to True if not explicitly False
     terminal_access = True
@@ -664,7 +664,7 @@ async def orchestrator_llm_node(state: AgentState):
         messages = state.get("messages", [])
 
         # Inject the profile message right before the chat history
-        invocation_messages = profile_msg + messages
+        invocation_messages = profile_msg + welcome_msg_list + messages
         result = await chain.ainvoke(
             {"user_query": user_query, "messages": invocation_messages}
         )
@@ -676,7 +676,7 @@ async def orchestrator_llm_node(state: AgentState):
         messages = state.get("messages", [])
 
         # Inject the profile message right before the chat history
-        invocation_messages = profile_msg + messages
+        invocation_messages = profile_msg + welcome_msg_list + messages
         result = await chain.ainvoke(
             {"user_query": user_query, "messages": invocation_messages}
         )

@@ -18,7 +18,7 @@ from langchain_core.messages import AIMessage, HumanMessage
 
 import api.projects  # noqa: F401 — registers FastAPI routes on import
 from core import models as md
-from services import ollama_manager as m
+# from services import ollama_manager as m
 from core import prompts as prompt
 
 # Import the compiled graph
@@ -82,7 +82,7 @@ def shutdown_event():
 
 
 # define ollama_port for  further connections
-ollama_port = m.is_ollama_running()
+# ollama_port = m.is_ollama_running()
 
 ## Fetch all ollama models code
 ## TODO
