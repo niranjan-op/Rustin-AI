@@ -147,6 +147,52 @@ def init_sqlite_db(db_path="test.db"):
         """
     )
 
+    # =========================================================
+    # ATOMIC FACTS
+    # =========================================================
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS atomic_facts (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            fact_key TEXT NOT NULL,
+            fact_value TEXT NOT NULL,
+            category TEXT,
+            last_updated DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(user_id) REFERENCES users(id),
+            UNIQUE(user_id, fact_key)
+        )
+        """
+    )
+
+    # =========================================================
+    # WELCOME MESSAGES (15-slot cycle per user)
+    # =========================================================
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS welcome_messages (
+            user_id TEXT NOT NULL,
+            slot INTEGER NOT NULL,
+            message TEXT NOT NULL,
+            is_personalized INTEGER DEFAULT 0,
+            fact_key TEXT,
+            PRIMARY KEY (user_id, slot)
+        )
+        """
+    )
+
+    # =========================================================
+    # WELCOME STATE (tracks current cycle index per user)
+    # =========================================================
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS welcome_state (
+            user_id TEXT PRIMARY KEY,
+            current_index INTEGER DEFAULT 0
+        )
+        """
+    )
+
     conn.commit()
 
     # =========================================================

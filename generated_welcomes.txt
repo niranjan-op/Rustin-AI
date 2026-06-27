@@ -1,0 +1,28 @@
+[project_ideas]: Project ideas for diverse web & mobile apps.
+[name]: Rustin. Progress on that new project?
+[profession]: Rustin Cohle. Detective & coder.
+[project_type]: Project Type: Video Sharing Platform?
+[name]: Welcome back, Matt!
+[learning_goal]: How's Rust going, Matt?
+[programming_experience]: How's C++ going, Matt?
+[name]: Welcome back, Vin!
+[age]: Happy 65th, Vin!
+[hobbies]: How's coding and acting, Vin?
+[career_duration]: 45 years, Vin! Welcome back.
+[programming_languages]: C++ and Java treating you?
+[expertise]: How's the kernel, Vin?
+[preferred_tech_stack]: How's the web dev, Vin?
+[project_goal]: How's unbeatable Tic Tac Toe?
+[algorithm_preference]: How’s the Minimax algorithm, Vin?
+[project_goal]: How's the chess app, Vin?
+[board_representation]: How’s that Bitboard coming, Vin?
+[ui_framework]: Vanilla JavaScript treating you well?
+[development_style]: How's autonomous development, Vin?
+[development_environment]: Local server running, Vin?
+[project_type]: How's the bingo game?
+[project_type]: How's the bingo game?
+[project_type]: How's the bingo game?
+[tech_stack]: How's that stack coming along?
+[ui_theme]: Loving the red and black?
+[ui_feature]: Light mode toggle working well?
+[ui_transition]: How are those CSS transitions?

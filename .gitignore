@@ -1,45 +1,7 @@
-# Python Virtual Environments
-venv/
-.venv/
-env/
-
-# Python Cache
 __pycache__/
-*.py[cod]
-*$py.class
-
-# Environment Variables (Secrets)
-.env
-
-# Application Specific Local Data
-.files/
-local_rag_db/*
-
-# Temporary / Scratch / Debug files
-debug_settings.txt
-file.txt
-tasks.txt
-
-# Phased-out components
-Dockerfile
-
-# Node.js (if added later)
+venv/
 node_modules/
-
-# OS specific files
+.env
+.model/tasks.md
 .DS_Store
-Thumbs.db
-
-# Ignore dynamically generated folders in public/
-public/*
-!public/custom.css
-!public/custom.js
-!public/server/
-!logo_dark.ico
-!logo_dark.png
-!logo_light.png
-# Test files
-*_test.py
-test_*.py
-*_test.js
-test_*.js
+*.pyc

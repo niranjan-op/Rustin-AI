@@ -142,6 +142,67 @@ class Node:
             print(f"Error appending file: {e}")
             return str(e)
 
+    def edit_file_in_wkng_dir(self, path, name, target_content, replacement_content):
+        try:
+            target = Path(path) / name
+            if not target.exists():
+                return f"Error: File {name} does not exist."
+            with open(target, "r", encoding="utf-8") as file:
+                content = file.read()
+            if target_content not in content:
+                return f"Error: target_content not found in {name}."
+            content = content.replace(target_content, replacement_content)
+            with open(target, "w", encoding="utf-8") as file:
+                file.write(content)
+            print("File Edited Successfully")
+            return True
+        except Exception as e:
+            print(f"Error editing file: {e}")
+            return str(e)
+
+    def ensure_model_dir(self, path):
+        """Ensure .model/ directory exists in the project root."""
+        model_dir = Path(path) / '.model'
+        model_dir.mkdir(parents=True, exist_ok=True)
+        return model_dir
+
+    def read_model_file(self, path, filename):
+        """Read a file from .model/ directory. Returns content or empty string."""
+        try:
+            target = Path(path) / '.model' / filename
+            if target.exists():
+                with open(target, 'r', encoding='utf-8') as f:
+                    return f.read()
+            return ''
+        except Exception as e:
+            return f'Error reading {filename}: {e}'
+
+    def write_model_file(self, path, filename, content):
+        """Write/overwrite a file in .model/ directory."""
+        try:
+            model_dir = self.ensure_model_dir(path)
+            target = model_dir / filename
+            with open(target, 'w', encoding='utf-8') as f:
+                f.write(content)
+            print(f'.model/{filename} updated successfully')
+            return True
+        except Exception as e:
+            print(f'Error writing .model/{filename}: {e}')
+            return str(e)
+
+    def append_model_file(self, path, filename, content):
+        """Append to a file in .model/ directory."""
+        try:
+            model_dir = self.ensure_model_dir(path)
+            target = model_dir / filename
+            with open(target, 'a', encoding='utf-8') as f:
+                f.write(content)
+            print(f'.model/{filename} appended successfully')
+            return True
+        except Exception as e:
+            print(f'Error appending .model/{filename}: {e}')
+            return str(e)
+
 
 import atexit
 

@@ -1,0 +1,3 @@
+1. How do I shut down the server when the user changes the chat from project to all_chats?
+2. How do I run a cd command to change the cwd when the user changes chats?
+3. On starting the app, how do I set the server to something?

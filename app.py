@@ -355,8 +355,6 @@ async def on_start_chat():
 
                     # Fallback to database lookup if cookie was missing
                     if not node_instance.project_path:
-                        import sqlite3
-
                         conn = sqlite3.connect(".files/test.db")
                         cursor = conn.cursor()
                         cursor.execute(
@@ -377,6 +375,34 @@ async def on_start_chat():
         node_instance.shutdown()
 
     await update_settings_widgets(is_project_initial)
+    
+    # Generate personalized welcome message based on user profile
+    try:
+        from agent.nodes import generate_welcome_tasks
+        user = cl.user_session.get("user")
+        user_id = user.identifier if user else "1"
+        
+        # Debug: print current profile
+        debug_conn = sqlite3.connect(".files/test.db")
+        debug_cursor = debug_conn.cursor()
+        debug_cursor.execute("SELECT fact_key, fact_value, category FROM atomic_facts WHERE user_id = ?", (user_id,))
+        rows = debug_cursor.fetchall()
+        user_profile = [{"fact_key": r[0], "fact_value": r[1], "category": r[2]} for r in rows]
+        import json as _json
+        print(f"[DEBUG] INITIAL USER PROFILE FETCH: {_json.dumps(user_profile, indent=2)}")
+        debug_conn.close()
+        
+        # Generate and display the welcome message
+        welcome_msg = await generate_welcome_tasks(user_id)
+        print(f"[WELCOME] Selected message: {welcome_msg}")
+        
+        # Store the selected welcome message so we can inject it into the first AgentState
+        cl.user_session.set("welcome_context", welcome_msg)
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        print(f"[DEBUG] Failed to generate welcome message: {e}")
 
 
 @cl.on_chat_resume
@@ -599,12 +625,19 @@ async def on_message(message: cl.Message):
     else:
         human_msg_content = message.content
 
+    # Pull welcome_context for first message of a session (used once, then cleared)
+    welcome_context = cl.user_session.get("welcome_context", "")
+    if welcome_context:
+        cl.user_session.set("welcome_context", "")  # Clear after first use
+
     state = {
         "messages": history + [HumanMessage(content=human_msg_content)],
         "user_request": message.content,
         "elements": elements_data,
         "is_project": is_project,
         "project_id": project_id if is_project else None,
+        "welcome_context": welcome_context,
+        "current_phase": cl.user_session.get("current_phase"),
     }
 
     # UI Placeholder
@@ -668,6 +701,11 @@ async def on_message(message: cl.Message):
 
             # Stream LLM tokens in real-time
             elif kind == "on_chat_model_stream":
+                # Do not stream background LLM calls (like memory updates) to the UI
+                node_name = event.get("metadata", {}).get("langgraph_node", "")
+                if node_name == "memory_update_node":
+                    continue
+                    
                 chunk = event.get("data", {}).get("chunk")
                 if chunk is None:
                     continue
@@ -740,6 +778,11 @@ async def on_message(message: cl.Message):
                         print("[DEBUG] All strategies failed — using fallback message")
 
             cl.user_session.set("chat_history", final_messages)
+            
+            # Persist phase for next turn
+            new_phase = final_state.get("current_phase")
+            if new_phase:
+                cl.user_session.set("current_phase", new_phase)
         else:
             print("[DEBUG] No final_state captured from on_chain_end events")
             if not assistant_msg:

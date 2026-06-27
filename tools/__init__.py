@@ -15,6 +15,13 @@ from tools.coding_tools import (
     git_add_and_commit,
     git_log,
     git_reset,
+    route_to_thinking,
+    route_back_to_thinking,
+    route_to_coding,
+    edit_file_in_wkng_dir,
+    write_project_memory,
+    write_tasks,
+    append_project_timeline,
 )
 
 __all__ = [
@@ -31,4 +38,11 @@ __all__ = [
     "git_add_and_commit",
     "git_log",
     "git_reset",
+    "route_to_thinking",
+    "route_back_to_thinking",
+    "route_to_coding",
+    "edit_file_in_wkng_dir",
+    "write_project_memory",
+    "write_tasks",
+    "append_project_timeline",
 ]

@@ -639,11 +639,11 @@
 
         // --- Home Screen Welcome Message ---
         if (!document.getElementById("custom-welcome-msg")) {
-          // Check: no chat messages on screen (home/welcome screen)
-          const hasMessages = document.querySelectorAll('[class*="message"]').length > 3;
+          // Check: no actual chat messages on screen
+          const hasMessages = document.querySelectorAll('.step, .message').length > 0;
           
           // Find the main textarea (the message composer)
-          const textarea = document.querySelector('textarea[placeholder*="message"], textarea[placeholder*="Message"], textarea');
+          const textarea = document.querySelector('textarea');
           
           // Find the logo image on the welcome screen (ignoring header logos)
           const logoImg = document.querySelector('img[src*="no_background"]:not(.brand-logo):not(#login-logo-img)');
@@ -669,8 +669,8 @@
                }
              }
              
-             // Fetch and type the welcome text
-             fetch('/public/welcome.txt')
+             // Fetch and type the welcome text with cache-busting
+             fetch('/public/welcome.txt?t=' + new Date().getTime())
                 .then(res => res.text())
                 .then(text => {
                   const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);

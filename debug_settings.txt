@@ -1,0 +1,5 @@
+Settings type: <class 'dict'>
+Settings content: {'chat-type': 'normal'}
+chat_type extracted: normal
+project_id extracted: NO_CONTEXT
+is_project: False

@@ -3,10 +3,10 @@ import sqlite3
 import uuid
 from datetime import datetime
 
-from chainlit.server import app
 from chainlit.auth import get_current_user
+from chainlit.server import app
 from chainlit.user import User
-from fastapi import HTTPException, Query, Depends
+from fastapi import Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 
 DB_PATH = ".files/test.db"
@@ -42,7 +42,9 @@ async def validate_path(
 
 
 @app.post(r"/api/projects/create-project", response_model=dict)
-async def create_project(project: ProjectCreate, current_user: User | None = Depends(get_current_user)):
+async def create_project(
+    project: ProjectCreate, current_user: User | None = Depends(get_current_user)
+):
     user_identifier = current_user.identifier if current_user else "guest"
     normalized_path = os.path.normpath(os.path.expanduser(project.path))
     if not os.path.isdir(normalized_path):
@@ -102,7 +104,7 @@ async def projects_list(current_user: User | None = Depends(get_current_user)):
             WHERE user_identifier = ?
             ORDER BY created_at DESC;
             """,
-            (user_identifier,)
+            (user_identifier,),
         )
         rows = cursor.fetchall()
         return [
@@ -117,7 +119,7 @@ async def projects_list(current_user: User | None = Depends(get_current_user)):
 @app.delete(r"/api/projects/delete-project")
 async def delete_project(
     project_id: str = Query(..., description="The project ID to delete"),
-    current_user: User | None = Depends(get_current_user)
+    current_user: User | None = Depends(get_current_user),
 ):
     user_identifier = current_user.identifier if current_user else "guest"
     try:

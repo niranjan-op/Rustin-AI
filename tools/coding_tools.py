@@ -118,13 +118,16 @@ def _update_active_project_path():
         print(f"Error fetching path in tool: {e}")
 
     if (
-        project_path
-        and project_path != "undefined"
-        and project_path != "null"
-        and project_path != "None"
+        not project_path
+        or project_path == "undefined"
+        or project_path == "null"
+        or project_path == "None"
     ):
-        sandbox_node.node_instance.project_path = project_path
-        print(f"Updated sandbox project path to: {project_path}")
+        import os
+        project_path = os.getcwd()
+
+    sandbox_node.node_instance.project_path = project_path
+    print(f"Updated sandbox project path to: {project_path}")
     return sandbox_node.node_instance.project_path
 
 
@@ -139,15 +142,32 @@ def stop_node_server() -> str:
     return "Node server stopped successfully."
 
 
-# @tool
-# def thinking(tasks: str) -> str:
-#     """
-#     Provide a complete detailed list of tasks to be implemented
-#     which need to be planned before implementation. This tool will help you to think and plan the next step.
+@tool
+def route_to_thinking(reason: str) -> str:
+    """
+    Call this tool when the user's request involves complex coding tasks that require planning and thinking.
+    This will redirect the execution flow to the dedicated thinking and planning node.
+    Input format: reason: str (brief reason for routing)
+    """
+    return "Redirecting to thinking node for plan generation."
 
-#     Input format: tasks : str
-#     """
-#     return ""
+
+@tool
+def route_back_to_thinking(reason: str) -> str:
+    """
+    Use this tool to return to the thinking node if the current plan is flawed, needs revision, or if you encounter errors you cannot solve.
+    Input format: reason: str (e.g. 'Encountered architectural flaw requiring a revised plan')
+    """
+    return f"Routing back to thinking node: {reason}"
+
+
+@tool
+def route_to_coding(reason: str) -> str:
+    """
+    Call this tool when the plan is finalized and you are ready to hand over execution to the coding node.
+    Input format: reason: str (e.g. 'Plan finalized, ready for implementation')
+    """
+    return f"Routing to coding node: {reason}"
 
 
 @tool
@@ -188,6 +208,63 @@ def append_file_to_wkng_dir(name: str, content: str) -> str:
         return f"Failed to append to {name}. Error: {success}"
 
 
+@tool
+def edit_file_in_wkng_dir(name: str, target_content: str, replacement_content: str) -> str:
+    """
+    Edit an existing file in the current project directory by replacing a specific block of text.
+    Input format: name: str (e.g. 'script.py'), target_content: str (the exact text to replace), replacement_content: str (the new text)
+    """
+    from sandbox import node_sandbox as sandbox_node
+
+    path = _update_active_project_path()
+    if not path:
+        return "Error: No active project path."
+
+    success = sandbox_node.node_instance.edit_file_in_wkng_dir(path, name, target_content, replacement_content)
+    if success is True:
+        return f"Successfully edited {name}"
+    else:
+        return f"Failed to edit {name}. Error: {success}"
+
+
+@tool
+def write_project_memory(content: str) -> str:
+    """Overwrite the .model/project_memory.md with updated project knowledge. This should contain: project overview, tech stack, directory structure with file explanations, architectural decisions, known issues.
+    Input format: content: str (the full markdown content)"""
+    from sandbox import node_sandbox as sandbox_node
+    path = _update_active_project_path()
+    if not path:
+        return 'Error: No active project path.'
+    success = sandbox_node.node_instance.write_model_file(path, 'project_memory.md', content)
+    return 'Project memory updated.' if success is True else f'Failed: {success}'
+
+
+@tool
+def write_tasks(content: str) -> str:
+    """Overwrite the .model/tasks.md with the current task list. Use markdown checkboxes: - [ ] for pending, - [x] for completed.
+    Input format: content: str (the full markdown content)"""
+    from sandbox import node_sandbox as sandbox_node
+    path = _update_active_project_path()
+    if not path:
+        return 'Error: No active project path.'
+    success = sandbox_node.node_instance.write_model_file(path, 'tasks.md', content)
+    return 'Tasks updated.' if success is True else f'Failed: {success}'
+
+
+@tool
+def append_project_timeline(entry: str) -> str:
+    """Append a new timestamped entry to .model/project_timeline.md. Include: what was done, outcome (success/failure), git commit hash if applicable.
+    Input format: entry: str (the markdown entry to append)"""
+    from sandbox import node_sandbox as sandbox_node
+    import datetime
+    path = _update_active_project_path()
+    if not path:
+        return 'Error: No active project path.'
+    timestamped = f'\n## {datetime.datetime.now().strftime("%Y-%m-%d %H:%M")}\n{entry}\n'
+    success = sandbox_node.node_instance.append_model_file(path, 'project_timeline.md', timestamped)
+    return 'Timeline updated.' if success is True else f'Failed: {success}'
+
+
 coding_tools = [
     execute_command_terminal,
     stop_node_server,
@@ -198,6 +275,13 @@ coding_tools = [
     git_log,
     git_status,
     git_reset,
+    route_to_thinking,
+    route_back_to_thinking,
+    route_to_coding,
+    edit_file_in_wkng_dir,
+    write_project_memory,
+    write_tasks,
+    append_project_timeline,
 ]
 non_coding_tools = []
 tools = coding_tools + non_coding_tools
