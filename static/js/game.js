@@ -9,26 +9,40 @@ document.addEventListener('DOMContentLoaded', () => {
     themeToggle.addEventListener('click', () => {
         const html = document.documentElement;
         const currentTheme = html.getAttribute('data-bs-theme');
-        html.setAttribute('data-bs-theme', currentTheme === 'dark' ? 'light' : 'dark');
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        html.setAttribute('data-bs-theme', newTheme);
+        console.log("Theme toggled to:", newTheme);
     });
 
     async function initGame() {
-        const res = await fetch('/api/new-game');
-        const data = await res.json();
-        board = data.board;
-        renderBoard();
+        console.log("Initializing game...");
+        try {
+            const res = await fetch('/api/new-game');
+            const data = await res.json();
+            console.log("Board received:", data.board);
+            board = data.board;
+            renderBoard();
+        } catch (e) {
+            console.error("Error initializing game:", e);
+        }
     }
 
     function renderBoard() {
         boardEl.innerHTML = '';
         for (let r = 0; r < 5; r++) {
             for (let c = 0; c < 5; c++) {
+                const colDiv = document.createElement('div');
+                colDiv.className = 'col';
                 const cell = document.createElement('div');
-                cell.className = 'col-2-4 bingo-cell';
+                cell.className = 'bingo-cell';
                 cell.textContent = board[r][c];
-                if (r === 2 && c === 2) cell.classList.add('marked');
+                if (r === 2 && c === 2) {
+                    cell.classList.add('marked');
+                    marked[r][c] = true;
+                }
                 cell.onclick = () => markCell(r, c, cell);
-                boardEl.appendChild(cell);
+                colDiv.appendChild(cell);
+                boardEl.appendChild(colDiv);
             }
         }
     }
