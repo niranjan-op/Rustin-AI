@@ -1,0 +1,35 @@
+:root {
+    --bg-color: #121212;
+    --text-color: #ffffff;
+    --accent-color: #dc3545;
+    --cell-bg: #1e1e1e;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+[data-bs-theme="light"] {
+    --bg-color: #ffffff;
+    --text-color: #121212;
+    --cell-bg: #f8f9fa;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.bingo-cell {
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--accent-color);
+    cursor: pointer;
+    background-color: var(--cell-bg);
+    transition: background-color 0.3s ease;
+}
+
+.bingo-cell.marked {
+    background-color: var(--accent-color);
+    color: white;
+}
