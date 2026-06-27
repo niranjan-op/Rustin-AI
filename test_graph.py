@@ -6,14 +6,11 @@ from agent.states import AgentState
 async def test_flow():
     state = {
         "messages": [
-            HumanMessage(content="I want to create the famous missionary and monsters game. How should I proceed?"),
-            AIMessage(content="I have created the plan. Do you approve?"),
-            HumanMessage(content="Yes, go ahead and implement it.")
+            HumanMessage(content="I want to create the famous missionary and monsters game. How should I proceed?")
         ],
-        "user_request": "Yes, go ahead and implement it.",
+        "user_request": "I want to create the famous missionary and monsters game. How should I proceed?",
         "is_project": True,
-        "project_id": "test_id",
-        "current_phase": "thinking"
+        "project_id": "test_id"
     }
 
     print("Starting graph...")

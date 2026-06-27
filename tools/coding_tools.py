@@ -123,8 +123,11 @@ def _update_active_project_path():
         or project_path == "null"
         or project_path == "None"
     ):
-        import os
-        project_path = os.getcwd()
+        if hasattr(sandbox_node.node_instance, "project_path") and sandbox_node.node_instance.project_path:
+            project_path = sandbox_node.node_instance.project_path
+        else:
+            import os
+            project_path = os.getcwd()
 
     sandbox_node.node_instance.project_path = project_path
     print(f"Updated sandbox project path to: {project_path}")

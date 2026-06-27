@@ -26,6 +26,3 @@
 [ui_theme]: Loving the red and black?
 [ui_feature]: Light mode toggle working well?
 [ui_transition]: How are those CSS transitions?
-[project_path]: Back in the root directory?
-[project_path]: How's the autonomous agent?
-[project_status]: Debugging the UI going well?
