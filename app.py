@@ -677,6 +677,7 @@ async def on_message(message: cl.Message):
 
         # Track active steps for tool executions
         active_steps = {}
+        llm_api_calls_count = 0
 
         # Create a general "Thinking" step for the overall process
         main_thinking_step = cl.Step(name="Thinking...", type="run")
@@ -691,6 +692,9 @@ async def on_message(message: cl.Message):
             run_id = event.get("run_id")
 
             # Track tool execution in Chainlit Steps
+            if kind in ["on_chat_model_start", "on_llm_start"]:
+                llm_api_calls_count += 1
+            
             if kind == "on_tool_start":
                 tool_step = cl.Step(name=f"Tool: {name}", type="tool", parent_id=main_thinking_step.id)
                 tool_step.input = event.get("data", {}).get("input")
@@ -823,5 +827,6 @@ async def on_message(message: cl.Message):
         await main_thinking_step.update()
 
     print(f"[DEBUG] Final msg.content = {repr(assistant_msg[:200])}")
+    print(f"[DEBUG] Total LLM API calls made during this task: {llm_api_calls_count}")
     msg.content = assistant_msg
     await msg.update()

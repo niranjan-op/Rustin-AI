@@ -61,19 +61,20 @@ def git_reset(commit_hash: str = "HEAD") -> str:
 
 
 @tool
-def execute_command_terminal(command: str) -> str:
+def execute_commands_terminal(commands: list[str]) -> str:
     """
-    Execute a bash/shell command on the user's machine directly through a node server.
+    Execute a list of bash/shell commands sequentially on the user's machine directly through a node server.
     Note: Strict security checks are enforced. Commands related to network discovery (e.g., ipconfig, ping, netsh),
     system shutdown (e.g., shutdown, reboot), and identity revealing (e.g., whoami, hostname, %USERNAME%)
     are strictly banned and will fail execution. This tool should only be used for safe coding-related activities
     like executing code, compiling, checking versions, or creating virtual environments.
     WARNING: On Windows, this runs via cmd.exe. Do NOT use pipe `|` or redirect `<` `>` characters in your python -c commands or strings, as cmd.exe will parse them and cause syntax errors. Create a python file using create_file_to_wkng_dir and execute it instead for complex scripts.
+    Pass a list of commands, and they will be executed one by one. If one fails, execution stops.
     """
     from sandbox import node_sandbox as sandbox_node
 
     _update_active_project_path()
-    result = sandbox_node.node_instance.execute_command(command)
+    result = sandbox_node.node_instance.execute_commands(commands)
     return result or ""
 
 
@@ -268,8 +269,87 @@ def append_project_timeline(entry: str) -> str:
     return 'Timeline updated.' if success is True else f'Failed: {success}'
 
 
+@tool
+def search_in_project(keyword: str, file_extension: str = "") -> str:
+    """
+    Search for a keyword across all files in the current project directory.
+    Returns matching file names, line numbers, and line content.
+    Use this tool to find specific code patterns, function definitions, variable names, or strings before editing.
+    Input format: keyword: str (the text to search for), file_extension: str (optional, e.g. '.py', '.js', '.html' to filter by type)
+    """
+    import os
+    from pathlib import Path
+
+    path = _update_active_project_path()
+    if not path:
+        return 'Error: No active project path.'
+
+    results = []
+    skip_dirs = {'.git', '__pycache__', 'node_modules', 'venv', '.venv', '.model', '.env'}
+    max_results = 50
+
+    for root, dirs, files in os.walk(path):
+        # Skip hidden/build directories
+        dirs[:] = [d for d in dirs if d not in skip_dirs]
+        for fname in files:
+            if file_extension and not fname.endswith(file_extension):
+                continue
+            fpath = os.path.join(root, fname)
+            rel_path = os.path.relpath(fpath, path)
+            try:
+                with open(fpath, 'r', encoding='utf-8', errors='ignore') as f:
+                    for line_num, line in enumerate(f, 1):
+                        if keyword.lower() in line.lower():
+                            results.append(f"{rel_path}:{line_num}: {line.rstrip()}")
+                            if len(results) >= max_results:
+                                break
+            except (PermissionError, OSError):
+                continue
+            if len(results) >= max_results:
+                break
+        if len(results) >= max_results:
+            break
+
+    if not results:
+        return f"No matches found for '{keyword}'{' in *' + file_extension + ' files' if file_extension else ''}."
+    header = f"Found {len(results)} match(es) for '{keyword}':\n"
+    return header + "\n".join(results)
+
+
+@tool
+def read_file_content(name: str, start_line: int = 1, end_line: int = 0) -> str:
+    """
+    Read the content of a file in the current project directory.
+    Use this to inspect existing code before editing it.
+    Input format: name: str (relative path e.g. 'src/app.py'), start_line: int (1-indexed, default 1), end_line: int (0 means entire file)
+    """
+    from pathlib import Path
+
+    path = _update_active_project_path()
+    if not path:
+        return 'Error: No active project path.'
+
+    target = Path(path) / name
+    if not target.exists():
+        return f"Error: File '{name}' does not exist."
+    try:
+        with open(target, 'r', encoding='utf-8', errors='ignore') as f:
+            lines = f.readlines()
+        total = len(lines)
+        if end_line <= 0:
+            end_line = total
+        start_line = max(1, start_line)
+        end_line = min(total, end_line)
+        selected = lines[start_line - 1:end_line]
+        header = f"File: {name} (lines {start_line}-{end_line} of {total})\n"
+        numbered = "".join(f"{i}: {line}" for i, line in enumerate(selected, start_line))
+        return header + numbered
+    except Exception as e:
+        return f"Error reading file: {e}"
+
+
 coding_tools = [
-    execute_command_terminal,
+    execute_commands_terminal,
     stop_node_server,
     create_file_to_wkng_dir,
     append_file_to_wkng_dir,
@@ -282,6 +362,8 @@ coding_tools = [
     route_back_to_thinking,
     route_to_coding,
     edit_file_in_wkng_dir,
+    search_in_project,
+    read_file_content,
     write_project_memory,
     write_tasks,
     append_project_timeline,

@@ -70,19 +70,19 @@ class Node:
             self.server_process = None
             print("Server stopped.")
 
-    def execute_command(self, command):
+    def execute_commands(self, commands):
         # Guarantee the server is running before attempting to send commands
         self.start_server()
 
         payload = {
-            "command": command,
+            "commands": commands,
             "projectPath": self.project_path,
             "message": "Hello from this world" * 32,
         }
 
         try:
             # 3. Send the command to the server
-            print(f"Sending command '{payload['command']}' to server...")
+            print(f"Sending commands '{payload['commands']}' to server...")
             response = requests.post(self.url, json=payload, timeout=10)
 
             print("\n--- Server Terminal Output ---")
@@ -96,17 +96,17 @@ class Node:
 
         return None
 
-    def not_starting_server(self, command):
+    def not_starting_server(self, commands):
         print(f"Project_path:{self.project_path}")
         payload = {
-            "command": command,
+            "commands": commands,
             "projectPath": self.project_path,
             "message": "Hello from this world" * 32,
         }
 
         try:
             # 3. Send the command to the server
-            print(f"Sending command '{payload['command']}' to server...")
+            print(f"Sending commands '{payload['commands']}' to server...")
             response = requests.post(self.url, json=payload)
 
             print("\n--- Server Terminal Output ---")

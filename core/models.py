@@ -22,7 +22,27 @@ base_llm = ChatGoogleGenerativeAI(model="gemini-3.1-flash-lite", temperature=0.5
 from tools.coding_tools import (
     route_to_coding,
     route_to_thinking,
+    git_status,
+    git_log,
+    search_in_project,
+    read_file_content,
+    write_project_memory,
+    write_tasks,
+    append_project_timeline,
 )
+
+# Tools available to the thinking/planning node:
+# Read-only + memory/task writing + search + routing — but NOT file creation/edit/execution
+thinking_tools = [
+    route_to_coding,
+    git_status,
+    git_log,
+    search_in_project,
+    read_file_content,
+    write_project_memory,
+    write_tasks,
+    append_project_timeline,
+]
 
 orchestrator_read_tools = [
     route_to_thinking,
@@ -34,7 +54,7 @@ orchestrator_project_llm = base_llm.bind_tools(
 )
 thinking_llm = ChatGoogleGenerativeAI(
     model="gemini-3.1-flash-lite", temperature=0.5
-).bind_tools([route_to_coding])
+).bind_tools(thinking_tools)
 coding_llm = ChatGoogleGenerativeAI(
     model="gemini-3.1-flash-lite", temperature=0.5
 ).bind_tools(coding_tools)

@@ -49,3 +49,387 @@ coding_node -> coding_tools_node (phase=coding)
 coding_tools_node -> coding_node
 coding_node -> coding_tools_node (phase=coding)
 coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_node (no tools)
+orchestrator_llm -> orchestrator_tools (phase=thinking)
+orchestrator_tools -> thinking_node
+thinking_node -> thinking_tools_node (phase=coding)
+thinking_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_node (no tools)
+orchestrator_llm -> orchestrator_tools (phase=thinking)
+orchestrator_tools -> thinking_node
+thinking_node -> thinking_tools_node (phase=coding)
+thinking_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_node (no tools)
+orchestrator_llm -> orchestrator_tools (phase=thinking)
+orchestrator_tools -> thinking_node
+thinking_node -> thinking_tools_node (phase=coding)
+thinking_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_node (no tools)
+orchestrator_llm -> orchestrator_tools (phase=thinking)
+orchestrator_tools -> thinking_node
+orchestrator_llm -> orchestrator_tools (phase=thinking)
+orchestrator_tools -> thinking_node
+orchestrator_llm -> orchestrator_tools (phase=thinking)
+orchestrator_tools -> thinking_node
+orchestrator_llm -> orchestrator_tools (phase=thinking)
+orchestrator_tools -> thinking_node
+orchestrator_llm -> orchestrator_tools (phase=thinking)
+orchestrator_tools -> thinking_node
+orchestrator_llm -> orchestrator_tools (phase=thinking)
+orchestrator_tools -> thinking_node
+thinking_node -> thinking_tools_node (phase=coding)
+thinking_tools_node -> coding_node
+orchestrator_llm -> orchestrator_tools (phase=thinking)
+orchestrator_tools -> thinking_node
+thinking_node -> thinking_tools_node (phase=coding)
+thinking_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_node (no tools)
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_node (no tools)
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_node (no tools)
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_node (no tools)
+orchestrator_llm -> orchestrator_tools (phase=thinking)
+orchestrator_tools -> thinking_node
+thinking_node -> thinking_tools_node (phase=coding)
+thinking_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+orchestrator_llm -> orchestrator_tools (phase=thinking)
+orchestrator_tools -> thinking_node
+thinking_node -> thinking_node (no tools)
+thinking_node -> thinking_tools_node (phase=coding)
+thinking_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_node (no tools)
+orchestrator_llm -> orchestrator_tools (phase=thinking)
+orchestrator_tools -> thinking_node
+thinking_node -> thinking_tools_node (phase=thinking)
+thinking_tools_node -> thinking_node
+thinking_node -> thinking_tools_node (phase=thinking)
+thinking_tools_node -> thinking_node
+thinking_node -> thinking_tools_node (phase=coding)
+thinking_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_node (no tools)
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_node (no tools)
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_node (no tools)
+coding_node -> coding_node (no tools)
+coding_node -> coding_node (no tools)
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_node (no tools)
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_node (no tools)
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_node (no tools)
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_node (no tools)
+orchestrator_llm -> orchestrator_tools (phase=thinking)
+orchestrator_tools -> thinking_node
+thinking_node -> thinking_tools_node (phase=thinking)
+thinking_tools_node -> thinking_node
+thinking_node -> thinking_tools_node (phase=thinking)
+thinking_tools_node -> thinking_node
+thinking_node -> thinking_tools_node (phase=coding)
+thinking_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_node (no tools)
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_node (no tools)
+orchestrator_llm -> orchestrator_tools (phase=thinking)
+orchestrator_tools -> thinking_node
+thinking_node -> thinking_tools_node (phase=thinking)
+thinking_tools_node -> thinking_node
+thinking_node -> thinking_tools_node (phase=thinking)
+thinking_tools_node -> thinking_node
+thinking_node -> thinking_tools_node (phase=coding)
+thinking_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_node (no tools)
+coding_node -> coding_node (no tools)
+coding_node -> coding_node (no tools)
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_node (no tools)
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_node (no tools)
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_node (no tools)
+coding_node -> coding_node (no tools)
+coding_node -> coding_tools_node (phase=coding)
+coding_tools_node -> coding_node
+coding_node -> coding_node (no tools)
+coding_node -> coding_tools_node (phase=coding)

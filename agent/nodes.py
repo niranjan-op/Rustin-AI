@@ -121,6 +121,8 @@ async def thinking_node(state: AgentState):
     chain = prompt | thinking_llm
     result = await chain.ainvoke({"messages": messages})
     
+    # Only switch to coding phase when route_to_coding is called.
+    # Other tool calls (search, read, write_tasks, etc.) loop back to thinking.
     target_phase = None
     if hasattr(result, "tool_calls") and result.tool_calls:
         for call in result.tool_calls:
@@ -139,8 +141,9 @@ async def coding_node(state: AgentState):
     print("="*50 + "\n")
     
     from langchain_core.prompts import ChatPromptTemplate
+    from langchain_core.messages import SystemMessage
     
-    messages = state.get("messages", [])
+    messages = list(state.get("messages", []))
     
     # Build context injection from .model/ files
     context_parts = []
@@ -156,6 +159,34 @@ async def coding_node(state: AgentState):
     
     context_block = "\n\n".join(context_parts) if context_parts else ""
     system_prompt = coding_node_prompt_text + ("\n\n" + context_block if context_block else "")
+    
+    # STATUS CHECK + BATCHING NUDGE: When re-invoked after tool results, inject a
+    # dynamic status summary so the model knows exactly what it has already done,
+    # and a firm reminder to batch all remaining independent tools.
+    from langchain_core.messages import ToolMessage as _ToolMessage, AIMessage as _AIMessage
+    
+    # Collect all tool calls that have already been executed (have a corresponding ToolMessage)
+    completed_tools = []
+    for m in messages:
+        if isinstance(m, _ToolMessage):
+            completed_tools.append(m.name or "unknown_tool")
+    
+    has_recent_tool_results = any(
+        isinstance(m, _ToolMessage) for m in messages[-10:]
+    )
+    
+    if has_recent_tool_results:
+        completed_summary = ", ".join(completed_tools) if completed_tools else "none yet"
+        batching_nudge = SystemMessage(content=(
+            f"[STATUS CHECK] Tools already executed so far in this task: [{completed_summary}]. "
+            "Review the blueprint/plan from earlier in this conversation. "
+            "Identify which phases/steps are DONE (their tools appear above) and which are REMAINING. "
+            "Then execute ALL remaining independent tools for the next phase in THIS response. "
+            "Do NOT repeat tools that are already done. "
+            "Do NOT make a response with only 1 tool call — batch everything you can. "
+            "If all phases are complete, call write_project_memory + append_project_timeline + write_tasks + git_add_and_commit together, then send a final summary."
+        ))
+        messages.append(batching_nudge)
     
     prompt = ChatPromptTemplate.from_messages([
         ("system", system_prompt),
