@@ -9,20 +9,14 @@ from chainlit.context import context
 from langchain_core.messages import AIMessage, HumanMessage
 
 from agent.states import AgentState
-from core.models import (
-    memory_update_llm,
-    orchestrator_llm,
-    orchestrator_project_llm,
-    welcome_message_llm,
-    thinking_llm,
-    coding_llm,
-)
+from core import models as md
 from core.prompts import (
     memory_extract_llm_prompt,
     orchestrator_llm_prompt,
     orchestrator_project_llm_prompt,
     welcome_message_prompt,
     thinking_node_prompt_text,
+    coder_thinking_node_prompt_text,
     coding_node_prompt_text,
 )
 
@@ -40,6 +34,48 @@ PRIORITY_FACT_KEYS = {
     "building",
     "working",
 }
+
+def debug_log_llm(node_name, result, input_messages=None, metadata=None):
+    out_file = _os.path.join(_PROJECT_ROOT, "model_run_log.md")
+    try:
+        import datetime
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        with open(out_file, "a", encoding="utf-8") as f:
+            f.write(f"## ⚙️ Node: `{node_name}`\n")
+            f.write(f"**🕒 Time:** {timestamp}\n\n")
+            if metadata:
+                f.write(f"**📊 Metadata:** {metadata}\n\n")
+                
+            if input_messages:
+                f.write("### 📥 Input Messages\n")
+                try:
+                    for msg in input_messages:
+                        role = getattr(msg, "type", type(msg).__name__)
+                        content = getattr(msg, "content", str(msg))
+                        f.write(f"**[{role.upper()}]**\n```text\n{content}\n```\n\n")
+                except Exception as ex:
+                    f.write(f"```text\nError logging inputs: {ex}\n```\n\n")
+            
+            if hasattr(result, "content"):
+                content = result.content
+                if isinstance(content, list):
+                    content = str(content)
+                if content and content.strip():
+                    f.write("### 📝 Model Output\n")
+                    f.write(f"> {content.replace(chr(10), chr(10) + '> ')}\n\n")
+            elif not hasattr(result, "tool_calls") and not hasattr(result, "content"):
+                f.write("### 📝 Model Output\n")
+                f.write(f"```json\n{result}\n```\n\n")
+                
+            if hasattr(result, "tool_calls") and result.tool_calls:
+                f.write("### 🛠️ Tool Calls\n")
+                for call in result.tool_calls:
+                    f.write(f"- **{call['name']}**\n")
+                    f.write(f"  ```json\n  {json.dumps(call['args'], indent=2).replace(chr(10), chr(10) + '  ')}\n  ```\n")
+                f.write("\n")
+            f.write("---\n\n")
+    except Exception as e:
+        print(f"Failed to write to model_run_log.md: {e}")
 
 
 def _build_personalized_message(fact_key: str, fact_value: str, name: str) -> str:
@@ -113,27 +149,83 @@ async def thinking_node(state: AgentState):
     context_block = "\n\n".join(context_parts) if context_parts else ""
     system_prompt = thinking_node_prompt_text + ("\n\n" + context_block if context_block else "")
     
+    from langchain_core.messages import SystemMessage
     prompt = ChatPromptTemplate.from_messages([
-        ("system", system_prompt),
+        SystemMessage(content=system_prompt),
         ("placeholder", "{messages}")
     ])
     
-    chain = prompt | thinking_llm
+    chain = prompt | md.thinking_llm
     result = await chain.ainvoke({"messages": messages})
+    debug_log_llm("thinking_node", result, input_messages=messages)
     
-    # Only switch to coding phase when route_to_coding is called.
+    # Only switch to coder_thinking phase when route_to_coder_thinking is called.
     # Other tool calls (search, read, write_tasks, etc.) loop back to thinking.
     target_phase = None
     if hasattr(result, "tool_calls") and result.tool_calls:
         for call in result.tool_calls:
-            if call["name"] == "route_to_coding":
-                target_phase = "coding"
+            if call["name"] == "route_to_coder_thinking":
+                target_phase = "coder_thinking"
+                break
+            elif call["name"] == "route_to_research":
+                target_phase = "research"
                 break
                 
     if target_phase:
         return {"messages": [result], "response": result.content, "current_phase": target_phase}
     else:
         return {"messages": [result], "response": result.content}
+
+async def coder_thinking_node(state: AgentState):
+    print("\n" + "="*50)
+    print("🧠 [DEBUG] --- ENTERED CODER THINKING NODE ---")
+    print("="*50 + "\n")
+    
+    from langchain_core.prompts import ChatPromptTemplate
+    
+    messages = list(state.get("messages", []))
+    
+    # Build context injection from .model/ files
+    context_parts = []
+    project_structure = state.get("project_structure", "")
+    if project_structure:
+        context_parts.append(f"[PROJECT DIRECTORY STRUCTURE]:\n{project_structure}")
+    project_memory = state.get("project_memory", "")
+    if project_memory:
+        context_parts.append(f"[PROJECT MEMORY]:\n{project_memory}")
+    pending_tasks = state.get("pending_tasks", "")
+    if pending_tasks:
+        context_parts.append(f"[PENDING TASKS]:\n{pending_tasks}")
+    
+    context_block = "\n\n".join(context_parts) if context_parts else ""
+    system_prompt = coder_thinking_node_prompt_text + ("\n\n" + context_block if context_block else "")
+    
+    from langchain_core.messages import SystemMessage
+    prompt = ChatPromptTemplate.from_messages([
+        SystemMessage(content=system_prompt),
+        ("placeholder", "{messages}")
+    ])
+    
+    chain = prompt | md.coder_thinking_llm
+    result = await chain.ainvoke({"messages": messages})
+    debug_log_llm("coder_thinking_node", result, input_messages=messages)
+    
+    # Check routing
+    target_phase = None
+    if hasattr(result, "tool_calls") and result.tool_calls:
+        for call in result.tool_calls:
+            if call["name"] == "route_to_coding":
+                target_phase = "coding"
+                break
+            elif call["name"] == "route_back_to_thinking":
+                target_phase = "thinking"
+                break
+                
+    state_updates = {"messages": [result], "response": result.content, "implementation_plan": result.content}
+    if target_phase:
+        state_updates["current_phase"] = target_phase
+        
+    return state_updates
 
 async def coding_node(state: AgentState):
     print("\n" + "="*50)
@@ -147,6 +239,9 @@ async def coding_node(state: AgentState):
     
     # Build context injection from .model/ files
     context_parts = []
+    implementation_plan = state.get("implementation_plan", "")
+    if implementation_plan:
+        context_parts.append(f"[IMPLEMENTATION PLAN]:\n{implementation_plan}")
     project_structure = state.get("project_structure", "")
     if project_structure:
         context_parts.append(f"[PROJECT DIRECTORY STRUCTURE]:\n{project_structure}")
@@ -183,24 +278,25 @@ async def coding_node(state: AgentState):
             "Identify which phases/steps are DONE (their tools appear above) and which are REMAINING. "
             "Then execute ALL remaining independent tools for the next phase in THIS response. "
             "Do NOT repeat tools that are already done. "
-            "Do NOT make a response with only 1 tool call — batch everything you can. "
+            "Do NOT make a response with only 1 tool call - batch everything you can. "
             "If all phases are complete, call write_project_memory + append_project_timeline + write_tasks + git_add_and_commit together, then send a final summary."
         ))
         messages.append(batching_nudge)
     
     prompt = ChatPromptTemplate.from_messages([
-        ("system", system_prompt),
+        SystemMessage(content=system_prompt),
         ("placeholder", "{messages}")
     ])
     
-    chain = prompt | coding_llm
+    chain = prompt | md.coding_llm
     result = await chain.ainvoke({"messages": messages})
+    debug_log_llm("coding_node", result, input_messages=messages)
     
     target_phase = None
     if hasattr(result, "tool_calls") and result.tool_calls:
         for call in result.tool_calls:
-            if call["name"] == "route_back_to_thinking":
-                target_phase = "thinking"
+            if call["name"] == "route_to_coder_thinking":
+                target_phase = "coder_thinking"
                 break
                 
     if target_phase:
@@ -229,194 +325,18 @@ def _seed_welcome_slots(cursor, user_id: str):
 
 async def generate_welcome_tasks(user_id: str) -> str:
     """
-    Serves the next message in the 15-slot cycle for this user.
-    Seeds the slots from welcome.txt on first use.
-    Advances the index by 1 after each session (wraps at 15).
+    Serves a simple static welcome message to save API calls.
     """
-    conn = sqlite3.connect(DB_PATH, timeout=10.0)
-    cursor = conn.cursor()
-
-    try:
-        # Seed slots if this user has never had a welcome session
-        cursor.execute(
-            "SELECT COUNT(*) FROM welcome_messages WHERE user_id = ?", (user_id,)
-        )
-        count = cursor.fetchone()[0]
-        if count == 0:
-            _seed_welcome_slots(cursor, user_id)
-            conn.commit()
-            print(f"[WELCOME] Seeded 15 slots for user {user_id} from welcome.txt")
-
-        # Get current index
-        cursor.execute(
-            "SELECT current_index FROM welcome_state WHERE user_id = ?", (user_id,)
-        )
-        row = cursor.fetchone()
-        current_index = row[0] if row else 0
-
-        # Determine if the user is "new" (less than 10 messages)
-        cursor.execute(
-            "SELECT COUNT(*) FROM steps JOIN threads ON steps.threadId = threads.id WHERE threads.userIdentifier = ? AND steps.type = 'user_message'",
-            (user_id,),
-        )
-        msg_count_row = cursor.fetchone()
-        msg_count = msg_count_row[0] if msg_count_row else 0
-        is_established = msg_count >= 10
-
-        message = "Welcome back. Ready when you are."
-
-        if is_established:
-            # Lazy (Just-In-Time) Generation strategy for established users
-            cursor.execute(
-                "SELECT fact_key, fact_value FROM atomic_facts WHERE user_id = ? ORDER BY RANDOM() LIMIT 1",
-                (user_id,),
-            )
-            fact_row = cursor.fetchone()
-            if fact_row:
-                fact_key, fact_value = fact_row
-                # Fetch the user's name
-                cursor.execute(
-                    "SELECT fact_value FROM atomic_facts WHERE user_id = ? AND fact_key = 'name'",
-                    (user_id,),
-                )
-                name_row = cursor.fetchone()
-                name = name_row[0] if name_row else ""
-
-                try:
-                    chain = welcome_message_prompt | welcome_message_llm
-                    result = await chain.ainvoke(
-                        {"name": name, "fact_key": fact_key, "fact_value": fact_value}
-                    )
-                    raw = result.content
-                    if isinstance(raw, list):
-                        message = "".join(
-                            p.get("text", "") if isinstance(p, dict) else str(p)
-                            for p in raw
-                        ).strip()
-                    else:
-                        message = raw.strip()
-                    print(
-                        f"[WELCOME] (Lazy-Gen) LLM generated: '{message}' for '{fact_key}'={fact_value}"
-                    )
-                except Exception as e:
-                    print(
-                        f"[WELCOME] (Lazy-Gen) LLM failed, falling back to preset: {e}"
-                    )
-
-        # If user is new OR lazy generation failed/didn't run
-        if not is_established or message == "Welcome back. Ready when you are.":
-            # Fetch message at current slot
-            cursor.execute(
-                "SELECT message FROM welcome_messages WHERE user_id = ? AND slot = ?",
-                (user_id, current_index),
-            )
-            msg_row = cursor.fetchone()
-            if msg_row:
-                message = msg_row[0]
-
-        # Advance index (cycle)
-        next_index = (current_index + 1) % NUM_WELCOME_SLOTS
-        cursor.execute(
-            "INSERT OR REPLACE INTO welcome_state (user_id, current_index) VALUES (?, ?)",
-            (user_id, next_index),
-        )
-        conn.commit()
-        print(f"[WELCOME] Slot {current_index} served. Next index: {next_index}")
-
-        # Write the picked message to public/welcome_{user_id}.txt for the frontend UI animation
-        user_welcome_path = _os.path.join(_PROJECT_ROOT, "public", f"welcome_{user_id}.txt")
-        with open(user_welcome_path, "w", encoding="utf-8") as f:
-            f.write(message)
-
-        return message
-
-    except Exception as e:
-        print(f"[WELCOME] Error: {e}")
-        return "Welcome back. Ready when you are."
-    finally:
-        conn.close()
+    return "Welcome back. What shall we work on today?"
 
 
 async def update_welcome_slot(
     user_id: str, fact_key: str, fact_value: str, is_priority: bool = False
 ):
     """
-    Called after a new fact is written. Replaces the oldest preset (non-personalized)
-    slot with a personalized message. Priority facts (project/task etc.) are placed
-    at the very NEXT slot in the current cycle instead.
+    Disabled to save API calls.
     """
-    conn = sqlite3.connect(DB_PATH, timeout=10.0)
-    cursor = conn.cursor()
-    try:
-        # Fetch the user's name for the greeting
-        cursor.execute(
-            "SELECT fact_value FROM atomic_facts WHERE user_id = ? AND fact_key = 'name'",
-            (user_id,),
-        )
-        name_row = cursor.fetchone()
-        name = name_row[0] if name_row else ""
-
-        # Generate a personalized short message using LLM
-        chain = welcome_message_prompt | welcome_message_llm
-        result = await chain.ainvoke(
-            {"name": name, "fact_key": fact_key, "fact_value": fact_value}
-        )
-        # Gemini returns content as a list of parts, Ollama returns a string
-        raw = result.content
-        if isinstance(raw, list):
-            new_message = "".join(
-                p.get("text", "") if isinstance(p, dict) else str(p) for p in raw
-            ).strip()
-        else:
-            new_message = raw.strip()
-        print(
-            f"[WELCOME] LLM generated: '{new_message}' for fact '{fact_key}'={fact_value}"
-        )
-
-        if is_priority:
-            # Place at the next slot in the cycle (the one that will be served next session)
-            cursor.execute(
-                "SELECT current_index FROM welcome_state WHERE user_id = ?", (user_id,)
-            )
-            row = cursor.fetchone()
-            target_slot = row[0] if row else 0
-            print(
-                f"[WELCOME] Priority fact '{fact_key}' → slot {target_slot} (next in cycle)"
-            )
-        else:
-            # Replace the oldest preset slot (lowest slot number that is not yet personalized)
-            cursor.execute(
-                "SELECT slot FROM welcome_messages WHERE user_id = ? AND is_personalized = 0 ORDER BY slot ASC LIMIT 1",
-                (user_id,),
-            )
-            row = cursor.fetchone()
-            if not row:
-                # All slots are already personalized — overwrite the one whose fact is oldest
-                cursor.execute(
-                    "SELECT slot FROM welcome_messages WHERE user_id = ? ORDER BY slot ASC LIMIT 1",
-                    (user_id,),
-                )
-                row = cursor.fetchone()
-            target_slot = row[0] if row else 0
-
-        cursor.execute(
-            "UPDATE welcome_messages SET message = ?, is_personalized = 1, fact_key = ? WHERE user_id = ? AND slot = ?",
-            (new_message, fact_key, user_id, target_slot),
-        )
-        conn.commit()
-        print(
-            f"[WELCOME] Slot {target_slot} replaced with personalized message: {new_message}"
-        )
-
-        # Log to a text file so the user can easily see the generated messages
-        log_path = _os.path.join(_PROJECT_ROOT, "generated_welcomes.txt")
-        with open(log_path, "a", encoding="utf-8") as f:
-            f.write(f"[{fact_key}]: {new_message}\n")
-
-    except Exception as e:
-        print(f"[WELCOME] Failed to update slot: {e}")
-    finally:
-        conn.close()
+    pass
 
 
 async def fast_llm_node(state: AgentState):
@@ -425,6 +345,7 @@ async def fast_llm_node(state: AgentState):
     user_query = state.get("user_request", "")
     messages = state.get("messages", [])
     result = await chain.ainvoke({"user_query": user_query, "messages": messages})
+    debug_log_llm("fast_llm_node", result, input_messages=messages)
     return {"messages": [result], "response": result.content}
 
 
@@ -484,13 +405,14 @@ async def memory_update_node(state: AgentState):
 
     # Construct input
     combined_input = f"Existing memories:\n{existing_memories}\n\nRecent Conversation Context:\n{chat_context}"
-    chain = memory_extract_llm_prompt | memory_update_llm
+    chain = memory_extract_llm_prompt | md.memory_update_llm
 
     try:
         print(f"[MEMORY] Invoking LLM for fact extraction (user_id={user_id})...")
         result = await chain.ainvoke(
             {"memories": [HumanMessage(content=combined_input)]}
         )
+        debug_log_llm("memory_update_node", result, input_messages=[HumanMessage(content=combined_input)])
         facts = getattr(result, "facts", [])
         print(
             f"[MEMORY] LLM returned {len(facts)} facts: {[(f.fact_key, f.fact_value) for f in facts]}"
@@ -579,7 +501,13 @@ async def memory_update_node(state: AgentState):
 
     if conn:
         conn.close()
-    return {"learned_features": existing_memories}
+        
+    state_updates = {"learned_features": existing_memories}
+    
+    if state.get("current_phase") == "coding" and state.get("user_request"):
+        state_updates["current_phase"] = "coder_thinking"
+        
+    return state_updates
 
 
 async def orchestrator_llm_node(state: AgentState):
@@ -690,7 +618,7 @@ async def orchestrator_llm_node(state: AgentState):
 
     if terminal_access:
         print("Terminal access is enabled! Running orchestrator agent (access to terminal)")
-        chain = orchestrator_project_llm_prompt | orchestrator_project_llm
+        chain = orchestrator_project_llm_prompt | md.orchestrator_project_llm
         user_query = state.get("user_request", "")
         messages = state.get("messages", [])
 
@@ -699,10 +627,11 @@ async def orchestrator_llm_node(state: AgentState):
         result = await chain.ainvoke(
             {"user_query": user_query, "messages": invocation_messages}
         )
+        debug_log_llm("orchestrator_project_llm_node", result, input_messages=invocation_messages)
         print(result)
     else:
         print("Terminal access disabled. Running chat mode.")
-        chain = orchestrator_llm_prompt | orchestrator_llm
+        chain = orchestrator_llm_prompt | md.orchestrator_llm
         user_query = state.get("user_request", "")
         messages = state.get("messages", [])
 
@@ -711,6 +640,7 @@ async def orchestrator_llm_node(state: AgentState):
         result = await chain.ainvoke(
             {"user_query": user_query, "messages": invocation_messages}
         )
+        debug_log_llm("orchestrator_llm_node", result, input_messages=invocation_messages)
         print(result)
         
     target_phase = None
@@ -719,8 +649,59 @@ async def orchestrator_llm_node(state: AgentState):
             if call["name"] == "route_to_thinking":
                 target_phase = "thinking"
                 break
+            elif call["name"] == "route_to_research":
+                target_phase = "research"
+                break
                 
     if target_phase:
         return {**state_updates, "messages": [result], "response": result.content, "current_phase": target_phase}
     else:
         return {**state_updates, "messages": [result], "response": result.content}
+
+async def research_node(state: AgentState):
+    print("\n" + "="*50)
+    print("🔬 [DEBUG] --- ENTERED RESEARCH NODE ---")
+    print("="*50 + "\n")
+    
+    from langchain_core.prompts import ChatPromptTemplate
+    from langchain_core.messages import SystemMessage
+    
+    messages = list(state.get("messages", []))
+    
+    context_parts = []
+    search_results = state.get("search_results", "")
+    if search_results:
+        context_parts.append(f"[SEARCH RESULTS]:\n{search_results}")
+    project_structure = state.get("project_structure", "")
+    if project_structure:
+        context_parts.append(f"[PROJECT DIRECTORY STRUCTURE]:\n{project_structure}")
+    
+    context_block = "\n\n".join(context_parts) if context_parts else ""
+    from core.prompts import research_node_prompt_text
+    system_prompt = research_node_prompt_text + ("\n\n" + context_block if context_block else "")
+    
+    prompt = ChatPromptTemplate.from_messages([
+        SystemMessage(content=system_prompt),
+        ("placeholder", "{messages}")
+    ])
+    
+    chain = prompt | md.research_llm
+    result = await chain.ainvoke({"messages": messages})
+    debug_log_llm("research_node", result, input_messages=messages)
+    
+    target_phase = None
+    state_updates = {"messages": [result], "response": result.content}
+    
+    if hasattr(result, "tool_calls") and result.tool_calls:
+        for call in result.tool_calls:
+            if call["name"] == "route_to_orchestrator":
+                target_phase = "orchestrating"
+                reason = call["args"].get("reason", "")
+                if reason:
+                    state_updates["search_results"] = reason
+                break
+                
+    if target_phase:
+        state_updates["current_phase"] = target_phase
+        
+    return state_updates

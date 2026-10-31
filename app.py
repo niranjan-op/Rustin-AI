@@ -11,7 +11,7 @@ from chainlit.context import get_context
 from chainlit.data import BaseDataLayer
 from chainlit.data.sql_alchemy import SQLAlchemyDataLayer
 from chainlit.data.storage_clients.base import BaseStorageClient
-from chainlit.input_widget import Select, Switch
+from chainlit.input_widget import Select, Switch, TextInput
 from chainlit.server import app as fastapi_app
 from chainlit.types import ThreadDict
 from langchain_core.messages import AIMessage, HumanMessage
@@ -320,6 +320,146 @@ async def update_settings_widgets(is_project: bool, current_settings: dict = Non
     else:
         current_settings["terminal_access"] = False
 
+    provider = current_settings.get("llm_provider", "Gemini")
+    
+    providers = ["Gemini", "OpenRouter", "Groq", "Ollama (Local)"]
+    settings_list.append(
+        Select(
+            id="llm_provider",
+            label="LLM Provider",
+            values=providers,
+            initial_index=providers.index(provider) if provider in providers else 0,
+        )
+    )
+
+    if provider == "Gemini":
+        settings_list.append(
+            TextInput(
+                id="gemini_api_key",
+                label="Gemini API Key 1",
+                initial=current_settings.get("gemini_api_key", ""),
+            )
+        )
+        settings_list.append(
+            TextInput(
+                id="gemini_api_key_2",
+                label="Gemini API Key 2",
+                initial=current_settings.get("gemini_api_key_2", ""),
+            )
+        )
+        settings_list.append(
+            TextInput(
+                id="gemini_api_key_3",
+                label="Gemini API Key 3",
+                initial=current_settings.get("gemini_api_key_3", ""),
+            )
+        )
+        settings_list.append(
+            TextInput(
+                id="gemini_api_key_4",
+                label="Gemini API Key 4",
+                initial=current_settings.get("gemini_api_key_4", ""),
+            )
+        )
+        
+        models = current_settings.get("gemini_model_options", ["gemini-3.5-flash", "gemini-3.1-pro", "gemini-3.1-flash-lite"])
+        current_model = current_settings.get("gemini_model", "gemini-3.5-flash")
+        
+        settings_list.append(
+            Select(
+                id="gemini_model",
+                label="Gemini Model",
+                values=models,
+                initial_index=models.index(current_model) if current_model in models else 0,
+            )
+        )
+    elif provider == "OpenRouter":
+        settings_list.append(
+            TextInput(
+                id="openrouter_api_key",
+                label="OpenRouter API Key 1",
+                initial=current_settings.get("openrouter_api_key", ""),
+            )
+        )
+        settings_list.append(
+            TextInput(
+                id="openrouter_api_key_2",
+                label="OpenRouter API Key 2",
+                initial=current_settings.get("openrouter_api_key_2", ""),
+            )
+        )
+        settings_list.append(
+            TextInput(
+                id="openrouter_api_key_3",
+                label="OpenRouter API Key 3",
+                initial=current_settings.get("openrouter_api_key_3", ""),
+            )
+        )
+        settings_list.append(
+            TextInput(
+                id="openrouter_api_key_4",
+                label="OpenRouter API Key 4",
+                initial=current_settings.get("openrouter_api_key_4", ""),
+            )
+        )
+        
+        settings_list.append(
+            TextInput(
+                id="openrouter_model_name",
+                label="OpenRouter Model",
+                initial=current_settings.get("openrouter_model_name", "anthropic/claude-3.5-sonnet"),
+            )
+        )
+
+    elif provider == "Groq":
+        settings_list.append(
+            TextInput(
+                id="groq_api_key",
+                label="Groq API Key",
+                initial=current_settings.get("groq_api_key", ""),
+            )
+        )
+
+        groq_models = current_settings.get("groq_model_options", [
+            "llama-3.3-70b-versatile",
+            "llama-3.1-8b-instant",
+            "gemma2-9b-it",
+            "mixtral-8x7b-32768",
+        ])
+        current_groq_model = current_settings.get("groq_model", "llama-3.3-70b-versatile")
+
+        settings_list.append(
+            Select(
+                id="groq_model",
+                label="Groq Model",
+                values=groq_models,
+                initial_index=groq_models.index(current_groq_model) if current_groq_model in groq_models else 0,
+            )
+        )
+
+    elif provider == "Ollama (Local)":
+        settings_list.append(
+            TextInput(
+                id="ollama_base_url",
+                label="Ollama Server URL",
+                initial=current_settings.get("ollama_base_url", "http://127.0.0.1:11434"),
+            )
+        )
+        settings_list.append(
+            TextInput(
+                id="ollama_model",
+                label="Ollama Model Name",
+                initial=current_settings.get("ollama_model", "llama3.2:1b"),
+            )
+        )
+        settings_list.append(
+            Switch(
+                id="ollama_auto_start",
+                label="Auto-start Ollama server",
+                initial=current_settings.get("ollama_auto_start", True),
+            )
+        )
+
     settings = await cl.ChatSettings(settings_list).send()
     
     if isinstance(settings, dict):
@@ -477,6 +617,215 @@ async def on_chat_resume(thread: ThreadDict):
 async def setup_agent(settings):
     print("Settings updated:", settings)
     cl.user_session.set("settings", settings)
+    
+    # Update UI immediately so provider switch shows correct fields
+    is_project = settings.get("terminal_access", False)
+    await update_settings_widgets(is_project, settings)
+    
+    # Launch in background so the UI doesn't freeze the Settings Modal
+    asyncio.create_task(run_validation(settings))
+
+async def run_validation(settings):
+    provider = settings.get("llm_provider", "Gemini")
+    
+    if provider == "Gemini":
+        keys = [
+            settings.get("gemini_api_key"),
+            settings.get("gemini_api_key_2"),
+            settings.get("gemini_api_key_3"),
+            settings.get("gemini_api_key_4")
+        ]
+        valid_keys = [k for k in keys if k and k.strip()]
+        api_key = valid_keys[0] if valid_keys else None
+        model_name = settings.get("gemini_model")
+        
+        if valid_keys and model_name:
+            from core import models as md
+            md.update_gemini_models(valid_keys, model_name)
+            
+            async with cl.Step(name="Validating API Key...", type="run") as step:
+                step.output = "Initializing connection to model..."
+                await step.update()
+                
+                max_retries = 1
+                success = False
+                last_error_msg = "Unknown error"
+                
+                for i in range(max_retries):
+                    try:
+                        if i > 0:
+                            step.output = f"Attempt {i+1} of {max_retries}..."
+                            await step.update()
+                            
+                        await md.welcome_message_llm.ainvoke("Say hello to test the API key.")
+                        success = True
+                        step.output = f"Validation successful on attempt {i+1}."
+                        step.status = "SUCCESS"
+                        await step.update()
+                        break
+                    except Exception as e:
+                        error_msg = str(e)
+                        last_error_msg = error_msg
+                        
+                        if "403" in error_msg or "401" in error_msg or "API_KEY" in error_msg or "authentication" in error_msg.lower() or "invalid" in error_msg.lower():
+                            step.output = f"API key is invalid or unauthorized: {error_msg}"
+                            step.status = "FAILED"
+                            await step.update()
+                            break
+                            
+                        if i < max_retries - 1:
+                            delay = 2 ** i
+                            step.output = f"API call failed (Rate limit or transient error). Retrying in {delay}s...\nError: {error_msg}"
+                            await step.update()
+                            await asyncio.sleep(delay)
+                        else:
+                            step.output = f"API call failed after {max_retries} attempts.\nError: {error_msg}"
+                            step.status = "FAILED"
+                            await step.update()
+                
+                if success:
+                    try:
+                        from google import genai
+                        client = genai.Client(api_key=api_key)
+                        available = []
+                        for m in client.models.list():
+                            if "gemini" in m.name.lower():
+                                available.append(m.name)
+                            if len(available) > 50:
+                                break
+                        if not available:
+                            available = ["gemini-3.5-flash"]
+                        
+                        settings["gemini_model_options"] = available
+                        cl.user_session.set("settings", settings)
+                        
+                        is_project = settings.get("terminal_access", False)
+                        await update_settings_widgets(is_project, settings)
+                    except Exception as ex:
+                        print("Could not fetch models:", ex)
+                        
+                    await cl.Message(content=f"Setup successful using {model_name}").send()
+                else:
+                    await cl.ErrorMessage(content=f"API call failed: {last_error_msg}").send()
+                    print(f"API key test failed after validation attempts: {last_error_msg}")
+
+    elif provider == "OpenRouter":
+        keys = [
+            settings.get("openrouter_api_key"),
+            settings.get("openrouter_api_key_2"),
+            settings.get("openrouter_api_key_3"),
+            settings.get("openrouter_api_key_4")
+        ]
+        valid_keys = [k for k in keys if k and k.strip()]
+        api_key = valid_keys[0] if valid_keys else None
+        model_name = settings.get("openrouter_model_name")
+        
+        if valid_keys and model_name:
+            from core import models as md
+            md.update_openrouter_models(valid_keys, model_name)
+            
+            async with cl.Step(name="Validating OpenRouter API Key...", type="run") as step:
+                step.output = "Initializing connection to model..."
+                await step.update()
+                
+                max_retries = 1
+                success = False
+                last_error_msg = "Unknown error"
+                
+                for i in range(max_retries):
+                    try:
+                        if i > 0:
+                            step.output = f"Attempt {i+1} of {max_retries}..."
+                            await step.update()
+                            
+                        await md.welcome_message_llm.ainvoke("Say hello to test the API key.")
+                        success = True
+                        step.output = f"Validation successful on attempt {i+1}."
+                        step.status = "SUCCESS"
+                        await step.update()
+                        break
+                    except Exception as e:
+                        error_msg = str(e)
+                        last_error_msg = error_msg
+                        
+                        if "403" in error_msg or "401" in error_msg or "API_KEY" in error_msg or "authentication" in error_msg.lower() or "invalid" in error_msg.lower():
+                            step.output = f"API key is invalid or unauthorized: {error_msg}"
+                            step.status = "FAILED"
+                            await step.update()
+                            break
+                            
+                        if i < max_retries - 1:
+                            delay = 2 ** i
+                            step.output = f"API call failed (Rate limit or transient error). Retrying in {delay}s...\nError: {error_msg}"
+                            await step.update()
+                            await asyncio.sleep(delay)
+                        else:
+                            step.output = f"API call failed after {max_retries} attempts.\nError: {error_msg}"
+                            step.status = "FAILED"
+                            await step.update()
+                
+                if success:
+                    await cl.Message(content=f"Setup successful using {model_name}").send()
+                else:
+                    await cl.ErrorMessage(content=f"API call failed: {last_error_msg}").send()
+                    print(f"API key test failed after validation attempts: {last_error_msg}")
+
+    elif provider == "Groq":
+        api_key = settings.get("groq_api_key", "").strip()
+        model_name = settings.get("groq_model")
+        
+        if api_key and model_name:
+            from core import models as md
+            md.update_groq_models(api_key, model_name)
+            
+            async with cl.Step(name="Validating Groq API Key...", type="run") as step:
+                step.output = "Initializing connection to Groq..."
+                await step.update()
+                
+                try:
+                    await md.welcome_message_llm.ainvoke("Say hello to test the API key.")
+                    step.output = "Validation successful."
+                    step.status = "SUCCESS"
+                    await step.update()
+                    await cl.Message(content=f"Setup successful using Groq {model_name}").send()
+                except Exception as e:
+                    error_msg = str(e)
+                    step.output = f"Groq API call failed: {error_msg}"
+                    step.status = "FAILED"
+                    await step.update()
+                    await cl.ErrorMessage(content=f"Groq API failed: {error_msg}").send()
+
+    elif provider == "Ollama (Local)":
+        base_url = settings.get("ollama_base_url", "http://127.0.0.1:11434")
+        model_name = settings.get("ollama_model", "llama3.2:1b")
+        auto_start = settings.get("ollama_auto_start", True)
+        
+        if model_name:
+            from core import models as md
+            from services.ollama_manager import is_ollama_running, _start_server
+            
+            async with cl.Step(name="Connecting to Ollama...", type="run") as step:
+                # Auto-start Ollama if enabled and not running
+                if auto_start:
+                    status = is_ollama_running()
+                    if not status:
+                        step.output = "Starting Ollama server..."
+                        await step.update()
+                        _start_server()
+                        await asyncio.sleep(3)
+                
+                try:
+                    md.update_ollama_models(base_url, model_name)
+                    await md.welcome_message_llm.ainvoke("Say hello.")
+                    step.output = f"Connected to Ollama ({model_name})"
+                    step.status = "SUCCESS"
+                    await step.update()
+                    await cl.Message(content=f"Setup successful using Ollama {model_name}").send()
+                except Exception as e:
+                    step.output = f"Ollama connection failed: {e}"
+                    step.status = "FAILED"
+                    await step.update()
+                    await cl.ErrorMessage(content=f"Could not connect to Ollama at {base_url}: {e}").send()
 
 
 def encode_image(image_path):

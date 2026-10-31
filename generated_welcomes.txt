@@ -31,3 +31,17 @@
 [communication_style]: How’s the universe treating you?
 [communication_style]: Ready to ponder today?
 [interest]: Enjoying the system architecture?
+[name]: Welcome back, NVG!
+[name]: Welcome back, 1234!
+[name]: Welcome back, NVG!
+[name]: Welcome back, 1234!
+[name]: Welcome back, NVG!
+[name]: Welcome back, NVG!
+[current_project]: How's the Missionaries game going?
+[preferred_tech_stack]: Ready for some vanilla JS?
+[ui_theme_preference]: Enjoying the dark theme?
+[current_project]: How's the game coming along?
+[learning_goal]: How's Rust and C++?
+[preferred_tech_stack]: How's the web dev going?
+[ui_theme_preference]: Loving the dark mode?
+[project_requirements]: How's the BFS project going?

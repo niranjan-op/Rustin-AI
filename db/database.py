@@ -193,6 +193,39 @@ def init_sqlite_db(db_path="test.db"):
         """
     )
 
+    # =========================================================
+    # USER API KEYS (encrypted, per-provider, multi-slot)
+    # =========================================================
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS user_api_keys (
+            user_id TEXT NOT NULL,
+            provider TEXT NOT NULL,
+            key_slot INTEGER NOT NULL,
+            encrypted_key BLOB NOT NULL,
+            key_hash TEXT NOT NULL,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (user_id, provider, key_slot)
+        )
+        """
+    )
+
+    # =========================================================
+    # USER PROVIDER SETTINGS (model selection, last-active)
+    # =========================================================
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS user_provider_settings (
+            user_id TEXT NOT NULL,
+            provider TEXT NOT NULL,
+            model_name TEXT,
+            last_active INTEGER DEFAULT 0,
+            extra_json TEXT DEFAULT '{}',
+            PRIMARY KEY (user_id, provider)
+        )
+        """
+    )
+
     conn.commit()
 
     # =========================================================

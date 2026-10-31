@@ -24,4 +24,8 @@ class AgentState(TypedDict, total=False):
     pending_tasks: Optional[str]            # Contents of .model/tasks.md
     project_timeline: Optional[str]         # Contents of .model/project_timeline.md
     project_learned_features: Optional[list]  # Project-scoped lessons (what failed/succeeded)
+    # Cross-layer context variables
+    enriched_user_prompt: Optional[str]     # Orchestrator sets this: exact user prompt + appended suggestions
+    implementation_plan: Optional[str]      # Coder thinking node sets this: concrete code-level spec
+    search_results: Optional[str]           # Research Agent sets this: compiled research data
 

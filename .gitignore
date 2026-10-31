@@ -5,3 +5,6 @@ node_modules/
 .model/tasks.md
 .DS_Store
 *.pyc
+.venv/
+local_rag_db/
+graphify-out/

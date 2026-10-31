@@ -26,7 +26,7 @@ def git_status() -> str:
     """Get repository status."""
     repo_path = _update_active_project_path()
     git = GitManager(repo_path)
-    return git.status()
+    return mask_paths(git.status())
 
 
 @tool
@@ -37,7 +37,7 @@ def git_add_and_commit(message: str) -> str:
     """
     repo_path = _update_active_project_path()
     git = GitManager(repo_path)
-    return git.add_and_commit(message)
+    return mask_paths(git.add_and_commit(message))
 
 
 @tool
@@ -45,7 +45,7 @@ def git_log(max_entries: int = 10) -> str:
     """View the git commit history for the current project."""
     repo_path = _update_active_project_path()
     git = GitManager(repo_path)
-    return git.log(max_entries)
+    return mask_paths(git.log(max_entries))
 
 
 @tool
@@ -57,7 +57,7 @@ def git_reset(commit_hash: str = "HEAD") -> str:
     """
     repo_path = _update_active_project_path()
     git = GitManager(repo_path)
-    return git.reset(commit_hash)
+    return mask_paths(git.reset(commit_hash))
 
 
 @tool
@@ -75,7 +75,7 @@ def execute_commands_terminal(commands: list[str]) -> str:
 
     _update_active_project_path()
     result = sandbox_node.node_instance.execute_commands(commands)
-    return result or ""
+    return mask_paths(result or "")
 
 
 def _update_active_project_path():
@@ -135,6 +135,28 @@ def _update_active_project_path():
     return sandbox_node.node_instance.project_path
 
 
+def mask_paths(text: str) -> str:
+    """Mask absolute project paths and user home paths in the given text for privacy."""
+    if not text or not isinstance(text, str):
+        return text
+        
+    path = _update_active_project_path()
+    if path and path not in ("undefined", "null", "None"):
+        # Replace Windows backslashes and POSIX forward slashes
+        text = text.replace(path, "[PROJECT_ROOT]")
+        text = text.replace(path.replace("\\\\", "/"), "[PROJECT_ROOT]")
+        text = text.replace(path.replace("/", "\\\\"), "[PROJECT_ROOT]")
+        
+    import os
+    home_dir = os.path.expanduser("~")
+    if home_dir and len(home_dir) > 3: # Avoid masking something too short like 'C:\\'
+        text = text.replace(home_dir, "[HOME]")
+        text = text.replace(home_dir.replace("\\\\", "/"), "[HOME]")
+        text = text.replace(home_dir.replace("/", "\\\\"), "[HOME]")
+        
+    return text
+
+
 @tool
 def stop_node_server() -> str:
     """
@@ -172,6 +194,36 @@ def route_to_coding(reason: str) -> str:
     Input format: reason: str (e.g. 'Plan finalized, ready for implementation')
     """
     return f"Routing to coding node: {reason}"
+
+
+@tool
+def route_to_coder_thinking(reason: str) -> str:
+    """
+    Call this tool when the high-level plan is ready and needs to be translated
+    into a concrete, code-level implementation specification before coding begins.
+    Also call this from the coding node when errors need root-cause analysis before fixing,
+    or when the user reports a bug or requests a new task.
+    Input format: reason: str (detailed reason for routing)
+    """
+    return f"Routing to coder thinking node: {reason}"
+
+
+@tool
+def route_to_research(reason: str) -> str:
+    """
+    Call this tool to route to the Research Agent for deep web research or codebase feasibility studies.
+    Input format: reason: str (detailed reason and topic for research)
+    """
+    return f"Routing to research node: {reason}"
+
+
+@tool
+def route_to_orchestrator(reason: str) -> str:
+    """
+    Call this tool to route back to the Orchestrator Manager when research or tasks are fully complete.
+    Input format: reason: str
+    """
+    return f"Routing to orchestrator node: {reason}"
 
 
 @tool
@@ -216,6 +268,8 @@ def append_file_to_wkng_dir(name: str, content: str) -> str:
 def edit_file_in_wkng_dir(name: str, target_content: str, replacement_content: str) -> str:
     """
     Edit an existing file in the current project directory by replacing a specific block of text.
+    CRITICAL: target_content must EXACTLY match the file's current content, including whitespace and indentation.
+    If this tool fails, DO NOT simply retry with the same arguments. Use read_file_content to check the exact current text and indentation before trying again.
     Input format: name: str (e.g. 'script.py'), target_content: str (the exact text to replace), replacement_content: str (the new text)
     """
     from sandbox import node_sandbox as sandbox_node
@@ -361,6 +415,7 @@ coding_tools = [
     route_to_thinking,
     route_back_to_thinking,
     route_to_coding,
+    route_to_coder_thinking,
     edit_file_in_wkng_dir,
     search_in_project,
     read_file_content,
@@ -368,5 +423,73 @@ coding_tools = [
     write_tasks,
     append_project_timeline,
 ]
-non_coding_tools = []
+@tool
+def web_search(queries: list[str]) -> str:
+    """
+    Search the web using DuckDuckGo. Pass 2-3 queries to gather enough info.
+    Input format: queries: list[str] (list of search queries)
+    """
+    try:
+        from ddgs import DDGS
+        import concurrent.futures
+        import json
+        
+        all_results = []
+        
+        def fetch_query(q):
+            with DDGS() as ddgs:
+                return list(ddgs.text(q, max_results=15))
+                
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            future_to_query = {executor.submit(fetch_query, q): q for q in queries}
+            for future in concurrent.futures.as_completed(future_to_query):
+                res = future.result()
+                if res:
+                    for r in res:
+                        if not any(existing.get("href") == r.get("href") for existing in all_results):
+                            all_results.append({
+                                "title": r.get("title", ""),
+                                "snippet": r.get("body", ""),
+                                "href": r.get("href", "")
+                            })
+        return json.dumps(all_results, indent=2)
+    except ImportError:
+        return "Error: ddgs package is not installed."
+    except Exception as e:
+        return f"Error during web search: {e}"
+
+@tool
+def curl_fetch(urls: list[str]) -> str:
+    """
+    Fetch full text content from a list of URLs.
+    Input format: urls: list[str]
+    """
+    import requests
+    from bs4 import BeautifulSoup
+    import concurrent.futures
+    import json
+    
+    results = {}
+    
+    def fetch_url(url):
+        try:
+            resp = requests.get(url, timeout=10)
+            resp.raise_for_status()
+            soup = BeautifulSoup(resp.text, 'html.parser')
+            for script in soup(["script", "style"]):
+                script.extract()
+            text = soup.get_text(separator=' ', strip=True)
+            return text[:20000]
+        except Exception as e:
+            return f"Failed to fetch: {e}"
+
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        future_to_url = {executor.submit(fetch_url, url): url for url in urls}
+        for future in concurrent.futures.as_completed(future_to_url):
+            url = future_to_url[future]
+            results[url] = future.result()
+            
+    return json.dumps(results, indent=2)
+
+non_coding_tools = [web_search, curl_fetch]
 tools = coding_tools + non_coding_tools

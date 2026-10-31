@@ -18,12 +18,14 @@ from tools.coding_tools import (
     route_to_thinking,
     route_back_to_thinking,
     route_to_coding,
+    route_to_coder_thinking,
     edit_file_in_wkng_dir,
     search_in_project,
     read_file_content,
     write_project_memory,
     write_tasks,
     append_project_timeline,
+    web_search,
 )
 
 __all__ = [
@@ -43,10 +45,12 @@ __all__ = [
     "route_to_thinking",
     "route_back_to_thinking",
     "route_to_coding",
+    "route_to_coder_thinking",
     "edit_file_in_wkng_dir",
     "search_in_project",
     "read_file_content",
     "write_project_memory",
     "write_tasks",
     "append_project_timeline",
+    "web_search",
 ]
